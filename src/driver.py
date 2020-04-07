@@ -14,8 +14,8 @@ class AzureDriver(ResourceDriverInterface):
         """
         self.request_parser = DriverRequestParser()
         self.deployments = {
-            "Azure VM From Marketplace 2G": self.deploy_vm,
-            "Azure VM From Custom Image 2G": self.deploy_vm_from_custom_image,
+            "Microsoft Azure 2G.Azure VM From Marketplace 2G": self.deploy_vm,
+            "Microsoft Azure 2G.Azure VM From Custom Image 2G": self.deploy_vm_from_custom_image,
         }
         self.azure_shell = AzureShell()
 
