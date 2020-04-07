@@ -1,0 +1,128 @@
+tosca_definitions_version: tosca_simple_yaml_1_0
+
+metadata:
+  template_name: Microsoft Azure
+  template_author: Quali
+  template_version: 0.1.0
+  template_icon: azure-icon.png
+
+description: >
+  Sample TOSCA based shell
+
+imports:
+  - cloudshell_standard: cloudshell_cloud_provider_standard_1_0_0.yaml
+
+# TODO: add hidden attributes !!!
+
+
+node_types:
+  vendor.resource.Microsoft Azure 2G:
+    derived_from: cloudshell.nodes.CustomCloudProvider
+    capabilities:
+
+      concurrent_command_capability:
+        type: cloudshell.capabilities.SupportConcurrentCommands
+
+      auto_discovery_capability:
+        type: cloudshell.capabilities.AutoDiscovery
+        properties:
+          enable_auto_discovery:
+            type: boolean
+            default: true
+          auto_discovery_description:
+            type: string
+            default: Describe the auto discovery
+          inventory_description:
+            type: string
+            default: "Azure template will create a Azure resource in CloudShell. Once the Azure is modeled correctly in CloudShell it will be possible to deploy Apps on Microsoft Azure."
+          hide_address:
+            type: string
+            default: true
+          Region:
+            type: string
+          VM Size:
+            type: string
+          Networks in use:
+            type: string
+          Azure Subscription ID:
+            type: string
+          Azure Tenant ID:
+            type: string
+          Azure Application ID:
+            type: string
+          Azure Application Key:
+            type: cloudshell.datatypes.Password
+          Management Group Name:
+            type: string
+          Execution Server Selector:
+            type: string
+            default: ""
+          Additional Mgmt Networks:
+            type: string
+            default: ""
+          Private IP Allocation Method:
+            type: string
+    properties:
+      Region:
+        type: string
+        description: "The public cloud region to be used by this cloud provider resource."
+
+      VM Size:
+        type: string
+        default: Standard_A3
+        description: "The Microsoft Azure VM Size. The VM Size determines the CPU, memory, disk size and networking capacity of the VM. For example: “Standard_A1_v2”. Use the &lt;a href='https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-windows-sizes' target='_blank'&gt;Azure documentation &lt;/a&gt; for more information, or the Azure CLI for a list of your region’s supported values: &lt;i&gt;az vm list-sizes --location “West US”&lt;/i&gt;"
+
+      Networks in use:
+        type: string
+        default: "10.0.0.0/24"
+        description: "Reserved networks to be excluded when allocating Sandbox networks. The value should include at least the Management Network. The syntax is comma-separated CIDRs. For example: “10.0.0.0/24, 10.1.0.0/16, 172.31.0.0/24”."
+
+      Azure Subscription ID:
+        type: string
+        description: "The Subscription ID of the Azure user."
+
+      Azure Tenant ID:
+        type: string
+        description: "The Azure Tenant Id that is associated with your Azure Active Directory (AAD) instance. For example: ccd13026-98e3-4e90-01f4-28e2afdf3213. The Tenant ID is created for the Active Directory and can be retrieved when creating the Azure API web application or retrieved from Azure CLI. For more information, see the “Configure Azure API to work with CloudShell” article in the CloudShell online help."
+
+      Azure Application ID:
+        type: string
+        description: "Application Id associated with the Azure API application. The application ID allows CloudShell to access the Azure API and is generated as part of the web application’s configuration process. For more information, see the “Configure Azure API to work with CloudShell” article in the CloudShell online help."
+
+      Azure Application Key:
+        type: cloudshell.datatypes.Password
+        description: "Application key associated with the Azure API application. The application key allows CloudShell to access the Azure API and is generated as part of the Azure application’s configuration process. For more information, see the “Configure Azure API to work with CloudShell” article in the CloudShell online help."
+
+      Management Group Name:
+        type: string
+        description: "The name of the Management Resource Group."
+
+      Execution Server Selector:
+        type: string
+        default: ""
+        description: "This attribute points to a pre-define group of execution servers. Usually used for different sites or domains."
+
+      Additional Mgmt Networks:
+        type: string
+        default: ""
+        description: "Networks to be allowed to interact with all sandboxes. This is used for allowing connectivity to Azure resources outside the CloudShell Management VNet that should be available to CloudShell sandboxes. The syntax is comma separated CIDRs."
+
+      Private IP Allocation Method:
+        type: string
+        default: "Azure Allocation"
+        description: "Defines the method that will be used to allocated private ip addresses to VMs. When Cloudshell Allocation method is selected the Azure-Shell will use the CloudShell Pool API to checkout the next available ip address when needed. When the instance is deleted the checked out ip addresses will be released. When Azure Allocation method is selected the private ips will be assigned by Azure when creating the network interface."
+        constraints:
+          - valid_values: ["Azure Allocation", "Cloudshell Allocation"]
+
+    artifacts:
+      icon:
+        file: azure-icon.png
+        type: tosca.artifacts.File
+      driver:
+        file: AzureDriver.zip
+        type: tosca.artifacts.File
+      deployment:
+        file: Deployments.zip
+        type: tosca.artifacts.File
+
+
