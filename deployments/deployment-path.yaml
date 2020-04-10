@@ -102,6 +102,11 @@ node_types:
         description: "Whether an app should allow inbound traffic from all other apps in the sandbox. If set to false, access from specific apps or subnets can be defined by an API call."
         tags: [user_input]
 
+      Enable IP Forwarding:
+        type: boolean
+        default: false
+        description: "Enables IP forwarding on all network interfaces of the app in order to support virtual appliances like routers and firewalls that are connected to multiple subnets."
+
     artifacts:
       icon:
         file: azure-marketplace-image-icon.png
@@ -184,6 +189,11 @@ node_types:
         default: true
         description: "Whether an app should allow inbound traffic from all other apps in the sandbox. If set to false, access from specific apps or subnets can be defined by an API call."
         tags: [user_input]
+
+      Enable IP Forwarding:
+        type: boolean
+        default: false
+        description: "Enables IP forwarding on all network interfaces of the app in order to support virtual appliances like routers and firewalls that are connected to multiple subnets."
 
     artifacts:
       icon:
