@@ -7,7 +7,7 @@ from package.cloudshell.cp.azure.actions.ssh_key_pair import SSHKeyPairActions
 from package.cloudshell.cp.azure.actions.network_security_group import NetworkSecurityGroupActions
 from package.cloudshell.cp.azure.actions.network import NetworkActions
 
-# TODO: run diffenrt commands in threads in the AbstractPrepareSandboxInfraFlow !!!!!!!!!!!!!!!!
+# TODO: run different commands in threads in the AbstractPrepareSandboxInfraFlow !!!!!!!!!!!!!!!!
 
 
 class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
@@ -76,10 +76,10 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
                                                              region=self._resource_config.region,
                                                              tags=tags)
 
-        nsg_actions.create_sandbox_network_security_group(nsg_name=nsg_name,
-                                                          resource_group_name=resource_group_name,
-                                                          region=self._resource_config.region,
-                                                          tags=tags)
+        nsg = nsg_actions.create_sandbox_network_security_group(nsg_name=nsg_name,
+                                                                resource_group_name=resource_group_name,
+                                                                region=self._resource_config.region,
+                                                                tags=tags)
 
         # todo: fix cancellation context checking - do it in the end of the command !!!
 
@@ -162,18 +162,24 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
             start_from=4090)
 
         # Create additional subnets requested by server
-        # for action in actions:
-        #     logger.warn('creating: ' + subnet.actionParams.cidr)
-        #     subnet_name = self.name_provider_service.format_subnet_name(group_name, subnet.actionParams.cidr)
-        #     self._create_subnet(cidr=subnet.actionParams.cidr,
-        #                         cloud_provider_model=cloud_provider_model,
-        #                         logger=logger,
-        #                         network_client=network_client,
-        #                         resource_client=resource_client,
-        #                         network_security_group=sandbox_network_security_group,
-        #                         sandbox_vnet=sandbox_vnet,
-        #                         subnet_name=subnet_name)
-        #     results.append(self._create_result(subnet, subnet_name))
+        for subnet_action in actions:
+            subnet_name = self._prepare_subnet_name(resource_group_name=resource_group_name,
+                                                    subnet_cidr=subnet_action.actionParams.cidr)
+
+            network_actions.create_subnet(subnet_name=subnet_name,
+                                          cidr=subnet_action.actionParams.cidr,
+                                          vnet=sandbox_vnet,
+                                          resource_group_name=self._resource_config.management_group_name,
+                                          network_security_group=nsg)
+
+    def _prepare_subnet_name(self, resource_group_name, subnet_cidr):
+        """
+
+        :param str resource_group_name:
+        :param str subnet_cidr:
+        :return:
+        """
+        return f"{resource_group_name}_{subnet_cidr}".replace(' ', '').replace('/', '-')
 
     def create_ssh_keys(self, action):
         """

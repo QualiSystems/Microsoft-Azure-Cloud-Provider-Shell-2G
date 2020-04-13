@@ -4,18 +4,16 @@ from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.resource import SubscriptionClient
 from azure.mgmt.storage import StorageManagementClient
 from azure.storage.file import FileService
-from msrestazure.azure_active_directory import ServicePrincipalCredentials
-from retrying import retry
 from azure.mgmt.resource.resources.models import ResourceGroup
 from azure.mgmt.storage import models as storage_models
 from azure.mgmt.network import models as network_models
-
+from msrestazure.azure_active_directory import ServicePrincipalCredentials
+from retrying import retry
 
 from package.cloudshell.cp.azure.utils.retrying import retry_on_connection_error
 
 
 class AzureAPIClient:
-
     def __init__(self, azure_subscription_id, azure_tenant_id, azure_application_id, azure_application_key, logger):
         """
 
@@ -236,3 +234,60 @@ class AzureAPIClient:
             security_rule_parameters=rule)
 
         return operation_poller.result()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def create_subnet(self, subnet_name, cidr, vnet_name, resource_group_name, network_security_group=None,
+                      wait_for_result=False):
+        """
+
+        :param str subnet_name:
+        :param str cidr:
+        :param str vnet_name:
+        :param str resource_group_name:
+        :param network_security_group:
+        :param bool wait_for_result:
+        """
+        operation_poller = self._network_client.subnets.create_or_update(
+            resource_group_name=resource_group_name,
+            virtual_network_name=vnet_name,
+            subnet_name=subnet_name,
+            subnet_parameters=network_models.Subnet(
+                address_prefix=cidr,
+                network_security_group=network_security_group))
+
+        if wait_for_result:
+            return operation_poller.result()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def update_subnet(self, subnet_name, vnet_name, subnet, resource_group_name, wait_for_result=False):
+        """
+
+        :param str subnet_name:
+        :param str vnet_name:
+        :param subnet:
+        :param str resource_group_name:
+        :param bool wait_for_result:
+        :return:
+        """
+        operation_poller = self._network_client.subnets.create_or_update(
+            resource_group_name=resource_group_name,
+            virtual_network_name=vnet_name,
+            subnet_name=subnet_name,
+            subnet_parameters=subnet)
+
+        if wait_for_result:
+            return operation_poller.result()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def delete_subnet(self, subnet_name, vnet_name, resource_group_name):
+        """
+
+        :param str subnet_name:
+        :param str vnet_name:
+        :param str resource_group_name:
+        :return:
+        """
+        result = self._network_client.subnets.delete(resource_group_name=resource_group_name,
+                                                     virtual_network_name=vnet_name,
+                                                     subnet_name=subnet_name)
+        result.wait()
