@@ -24,7 +24,7 @@ class NetworkSecurityGroupActions:
         :param dict tags:
         :return:
         """
-        self._logger.info("Creating sandbox network security group...")
+        self._logger.info(f"Creating sandbox network security group {nsg_name}...")
         return self._azure_client.create_network_security_group(
             network_security_group_name=nsg_name,
             resource_group_name=resource_group_name,
