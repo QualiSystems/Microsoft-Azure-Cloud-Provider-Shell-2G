@@ -40,6 +40,9 @@ class NetworkActions:
         :param str resource_group_name:
         :return:
         """
+        self._logger.info(f"Getting MGMT subnet by tag "
+                          f"{self.NETWORK_TYPE_TAG_NAME}={self.MGMT_NETWORK_TAG_VALUE}")
+
         virtual_networks = self._azure_client.get_virtual_networks_by_resource_group(resource_group_name)
         return self._get_virtual_network_by_tag(virtual_networks=virtual_networks,
                                                 tag_key=self.NETWORK_TYPE_TAG_NAME,
@@ -51,6 +54,9 @@ class NetworkActions:
         :param str resource_group_name:
         :return:
         """
+        self._logger.info(f"Getting sandbox subnet by tag "
+                          f"{self.NETWORK_TYPE_TAG_NAME}={self.SANDBOX_NETWORK_TAG_VALUE}")
+
         virtual_networks = self._azure_client.get_virtual_networks_by_resource_group(resource_group_name)
         return self._get_virtual_network_by_tag(virtual_networks=virtual_networks,
                                                 tag_key=self.NETWORK_TYPE_TAG_NAME,
