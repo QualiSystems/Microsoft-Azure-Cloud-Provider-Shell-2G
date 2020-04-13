@@ -118,12 +118,12 @@ node_types:
       Azure Image:
         type: string
         description: "Name of the custom image to be used to create a VM."
-        # todo: EditableOnlyInAppTemplate="true"
+        tags: [user_input, editable_only_in_app_template]
 
       Azure Resource Group:
         type: string
         description: "Name of the Azure resource group that the image belongs to."
-        # todo: EditableOnlyInAppTemplate="true"
+        tags: [user_input, editable_only_in_app_template]
 
       VM Size:
         type: string
