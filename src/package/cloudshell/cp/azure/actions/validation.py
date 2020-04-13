@@ -5,15 +5,6 @@ from package.cloudshell.cp.azure.actions.network import NetworkActions
 
 
 class ValidationActions(NetworkActions):
-    def __init__(self, azure_client, logger):
-        """
-
-        :param cloudshell.cp.azure.client.AzureAPIClient azure_client:
-        :param logging.Logger logger:
-        """
-        self._azure_client = azure_client
-        self._logger = logger
-
     def register_azure_providers(self):
         """
 
