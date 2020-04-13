@@ -1,4 +1,4 @@
-from azure.mgmt.network.models import NetworkSecurityGroup, RouteNextHopType, SecurityRuleProtocol, SecurityRuleAccess
+from azure.mgmt.network.models import RouteNextHopType, SecurityRuleProtocol, SecurityRuleAccess
 from azure.mgmt.network.models import SecurityRule
 
 

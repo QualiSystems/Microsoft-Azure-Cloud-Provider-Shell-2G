@@ -1,6 +1,5 @@
 from cloudshell.shell.core.driver_context import AutoLoadDetails
 
-from package.cloudshell.cp.azure.actions.network import NetworkActions
 from package.cloudshell.cp.azure.actions.validation import ValidationActions
 
 
