@@ -43,4 +43,4 @@ class RollbackCommand:
 
     def execute(self):
         with self._cancellation_manager:
-            self._execute()
+            return self._execute()

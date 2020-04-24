@@ -109,21 +109,34 @@ class AzureAPIClient:
             parameters=ResourceGroup(location=region, tags=tags))
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
-    def create_storage_account(self, resource_group_name, region, storage_account_name, tags, wait_until_created=False):
+    def delete_resource_group(self, group_name, wait_for_result=False):
+        """
+
+        :param str group_name:
+        :param str region:
+        :return:
+        """
+        operation_poller = self._resource_client.resource_groups.delete(resource_group_name=group_name)
+
+        if wait_for_result:
+            operation_poller.wait()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def create_storage_account(self, resource_group_name, region, storage_account_name, tags, wait_for_result=False):
         """
 
         :param str resource_group_name:
         :param str region:
         :param str storage_account_name:
         :param dict tags:
-        :param bool wait_until_created:
+        :param bool wait_for_result:
         :return:
         """
         kind_storage_value = storage_models.Kind.storage
         sku_name = storage_models.SkuName.standard_lrs
         sku = storage_models.Sku(name=sku_name)
 
-        create_account_task = self._storage_client.storage_accounts.create(
+        operation_poller = self._storage_client.storage_accounts.create(
             resource_group_name=resource_group_name,
             account_name=storage_account_name,
             parameters=storage_models.StorageAccountCreateParameters(
@@ -133,45 +146,64 @@ class AzureAPIClient:
                 tags=tags),
             raw=False)
 
-        if wait_until_created:
-            create_account_task.wait()
+        if wait_for_result:
+            operation_poller.wait()
+
+        return storage_account_name
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def delete_storage_account(self, resource_group_name, storage_account_name, wait_for_result=False):
+        """
+
+        :param str resource_group_name:
+        :param str storage_account_name:
+        :param bool wait_for_result:
+        :return:
+        """
+
+        operation_poller = self._storage_client.storage_accounts.delete(
+            resource_group_name=resource_group_name,
+            account_name=storage_account_name)
+
+        if wait_for_result:
+            operation_poller.wait()
 
         return storage_account_name
 
     @retry(stop_max_attempt_number=20, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
-    def _get_storage_account_key(self, group_name, storage_name):
+    def _get_storage_account_key(self, resource_group_name, storage_account_name):
         """Get first storage account access key for some storage
 
-        :param str group_name: name of the resource group on Azure
-        :param str storage_name: name of the storage on Azure
+        :param str resource_group_name: name of the resource group on Azure
+        :param str storage_account_name: name of the storage on Azure
         :rtype: str
         """
-        account_keys = self._storage_client.storage_accounts.list_keys(group_name, storage_name)
+        account_keys = self._storage_client.storage_accounts.list_keys(resource_group_name, storage_account_name)
         for account_key in account_keys.keys:
             return account_key.value
 
-        raise Exception(f"Unable to find access key for the storage account '{storage_name}' "
-                        f"under the '{group_name}' resource group")
+        raise Exception(f"Unable to find access key for the storage account '{storage_account_name}' "
+                        f"under the '{resource_group_name}' resource group")
 
-    def _get_file_service(self, group_name, storage_name):
+    def _get_file_service(self, resource_group_name, storage_account_name):
         """Get Azure file service for given storage
 
-        :param str group_name: the name of the resource group on Azure
-        :param str storage_name: the name of the storage on Azure
+        :param str resource_group_name: the name of the resource group on Azure
+        :param str storage_account_name: the name of the storage on Azure
         :return: azure.storage.file.FileService instance
         """
-        account_key = self._get_storage_account_key(group_name=group_name,
-                                                    storage_name=storage_name)
+        account_key = self._get_storage_account_key(resource_group_name=resource_group_name,
+                                                    storage_account_name=storage_account_name)
 
-        return FileService(account_name=storage_name, account_key=account_key)
+        return FileService(account_name=storage_account_name, account_key=account_key)
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
-    def create_file(self, group_name, storage_name, share_name,
+    def create_file(self, resource_group_name, storage_account_name, share_name,
                     directory_name, file_name, file_content):
         """Create file on the Azure
 
-        :param str group_name: name of the resource group on Azure
-        :param str storage_name: name of the storage on Azure
+        :param str resource_group_name: name of the resource group on Azure
+        :param str storage_account_name: name of the storage on Azure
         :param str share_name: share file name on Azure
         :param str directory_name: directory name for share file name on Azure
         :param str file_name: file name within directory
@@ -179,14 +211,34 @@ class AzureAPIClient:
         :return:
         """
         file_service = self._get_file_service(
-            group_name=group_name,
-            storage_name=storage_name)
+            resource_group_name=resource_group_name,
+            storage_account_name=storage_account_name)
 
         file_service.create_share(share_name=share_name, fail_on_exist=False)
         file_service.create_file_from_bytes(share_name=share_name,
                                             directory_name=directory_name,
                                             file_name=file_name,
                                             file=file_content)
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def get_file(self, resource_group_name, storage_account_name, share_name, directory_name, file_name):
+        """Get file from the Azure
+
+        :param str resource_group_name: name of the resource group on Azure
+        :param str storage_account_name: name of the storage on Azure
+        :param str share_name: share file name on Azure
+        :param str directory_name: directory name for share file name on Azure
+        :param str file_name: file name within directory
+        :return:
+        """
+        # todo: add caching here and in some other client methods !!!!!
+        file_service = self._get_file_service(
+            resource_group_name=resource_group_name,
+            storage_account_name=storage_account_name)
+
+        return file_service.get_file_to_text(share_name=share_name,
+                                             directory_name=directory_name,
+                                             file_name=file_name)
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
     def create_network_security_group(self, network_security_group_name, resource_group_name, region, tags):
@@ -200,12 +252,28 @@ class AzureAPIClient:
         """
         nsg_model = network_models.NetworkSecurityGroup(location=region, tags=tags)
 
-        create_nsg_task = self._network_client.network_security_groups.create_or_update(
+        operation_poller = self._network_client.network_security_groups.create_or_update(
             resource_group_name=resource_group_name,
             network_security_group_name=network_security_group_name,
             parameters=nsg_model)
 
-        return create_nsg_task.result()
+        return operation_poller.result()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def delete_network_security_group(self, network_security_group_name, resource_group_name, wait_for_result=False):
+        """
+
+        :param str network_security_group_name:
+        :param str resource_group_name:
+        :param bool wait_for_result:
+        :return:
+        """
+        operation_poller = self._network_client.network_security_groups.delete(
+            resource_group_name=resource_group_name,
+            network_security_group_name=network_security_group_name)
+
+        if wait_for_result:
+            return operation_poller.wait()
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
     def get_nsg_rules(self, resource_group_name, nsg_name):
@@ -220,7 +288,7 @@ class AzureAPIClient:
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
     def create_nsg_rule(self, resource_group_name, nsg_name, rule):
-        """Create NSG inbound rule on the Azure
+        """
 
         :param str resource_group_name:
         :param str nsg_name: Network Security Group name on the Azure
@@ -234,6 +302,23 @@ class AzureAPIClient:
             security_rule_parameters=rule)
 
         return operation_poller.result()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def delete_nsg_rule(self, resource_group_name, nsg_name, rule_name, wait_for_result=False):
+        """
+
+        :param str resource_group_name:
+        :param str nsg_name:
+        :param str rule_name:
+        :param bool wait_for_result:
+        """
+        operation_poller = self._network_client.security_rules.delete(
+            resource_group_name=resource_group_name,
+            network_security_group_name=nsg_name,
+            security_rule_name=rule_name)
+
+        if wait_for_result:
+            operation_poller.wait()
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
     def create_subnet(self, subnet_name, cidr, vnet_name, resource_group_name, network_security_group=None,
