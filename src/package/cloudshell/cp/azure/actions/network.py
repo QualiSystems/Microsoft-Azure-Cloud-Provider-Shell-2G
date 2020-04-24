@@ -95,6 +95,19 @@ class NetworkActions:
             # try to create subnet again
             create_subnet_cmd()
 
+    def delete_subnet(self, subnet_name, vnet, resource_group_name):
+        """
+
+        :param str subnet_name:
+        :param vnet:
+        :param str resource_group_name:
+        :return:
+        """
+        self._logger.info(f"Deleting subnet {subnet_name} under: {resource_group_name}/{vnet.name}...")
+        self._azure_client.delete_subnet(subnet_name=subnet_name,
+                                         vnet_name=vnet.name,
+                                         resource_group_name=resource_group_name)
+
     def _cleanup_stale_subnet(self, vnet, subnet_cidr, resource_group_name):
         """
 

@@ -20,9 +20,9 @@ class CreateResourceGroupCommand(RollbackCommand):
         self._tags = tags
 
     def _execute(self):
-        self._resource_group_actions.create_sandbox_resource_group(resource_group_name=self._resource_group_name,
-                                                                   region=self._region,
-                                                                   tags=self._tags)
+        self._resource_group_actions.create_resource_group(resource_group_name=self._resource_group_name,
+                                                           region=self._region,
+                                                           tags=self._tags)
 
     def rollback(self):
-        pass
+        self._resource_group_actions.delete_resource_group(resource_group_name=self._resource_group_name)

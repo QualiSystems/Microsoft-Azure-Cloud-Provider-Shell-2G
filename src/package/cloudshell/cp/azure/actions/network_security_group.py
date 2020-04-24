@@ -15,7 +15,7 @@ class NetworkSecurityGroupActions:
         self._azure_client = azure_client
         self._logger = logger
 
-    def create_sandbox_network_security_group(self, nsg_name, resource_group_name, region, tags):
+    def create_network_security_group(self, nsg_name, resource_group_name, region, tags):
         """
 
         :param str nsg_name:
@@ -24,14 +24,26 @@ class NetworkSecurityGroupActions:
         :param dict tags:
         :return:
         """
-        self._logger.info(f"Creating sandbox network security group {nsg_name}...")
+        self._logger.info(f"Creating network security group {nsg_name}...")
         return self._azure_client.create_network_security_group(
             network_security_group_name=nsg_name,
             resource_group_name=resource_group_name,
             region=region,
             tags=tags)
 
-    def _get_rule_priority_generator(self, resource_group_name, nsg_name, start_from=None):
+    def delete_network_security_group(self, nsg_name, resource_group_name):
+        """
+
+        :param str nsg_name:
+        :param str resource_group_name:
+        :return:
+        """
+        self._logger.info(f"Deleting network security group {nsg_name}...")
+        self._azure_client.delete_network_security_group(
+            network_security_group_name=nsg_name,
+            resource_group_name=resource_group_name)
+
+    def get_rule_priority_generator(self, resource_group_name, nsg_name, start_from=None):
         """Endless priority generator for NSG rules
 
         :param str resource_group_name:
@@ -64,7 +76,9 @@ class NetworkSecurityGroupActions:
             i += 1
 
     def create_nsg_allow_rule(self, rule_name, resource_group_name, nsg_name, src_address=RouteNextHopType.internet,
-                              dst_address=RouteNextHopType.internet, start_from=None):
+                              dst_address=RouteNextHopType.internet, src_port_range=SecurityRuleProtocol.asterisk,
+                              dst_port_range=SecurityRuleProtocol.asterisk, protocol=SecurityRuleProtocol.asterisk,
+                              rule_priority_generator=None, start_from=None):
         """
 
         :param str rule_name:
@@ -72,6 +86,10 @@ class NetworkSecurityGroupActions:
         :param str nsg_name:
         :param str src_address:
         :param str dst_address:
+        :param str src_port_range:
+        :param str dst_port_range:
+        :param rule_priority_generator:
+        :param str protocol:
         :param int start_from:
         :return:
         """
@@ -79,19 +97,22 @@ class NetworkSecurityGroupActions:
         #  for the only one NSG in reservation during the prepare_connectivuty action !!!??? -- seems that it
         #  also used in the deploy actions - there might be dozen of simultauso deployments in the one reservation
         self._logger.info(f"Creating security rule {rule_name} on NSG {nsg_name}...")
-        priority_generator = self._get_rule_priority_generator(resource_group_name=resource_group_name,
-                                                               nsg_name=nsg_name,
-                                                               start_from=start_from)
+        # todo: deal with rule_priority_generator in some better way
+        if rule_priority_generator is None:
+            rule_priority_generator = self.get_rule_priority_generator(resource_group_name=resource_group_name,
+                                                                       nsg_name=nsg_name,
+                                                                       start_from=start_from)
+
         rule = SecurityRule(
             name=rule_name,
             access=SecurityRuleAccess.allow,
             direction="Inbound",
             source_address_prefix=src_address,
-            source_port_range=SecurityRuleProtocol.asterisk,
+            source_port_range=src_port_range,
             destination_address_prefix=dst_address,
-            destination_port_range=SecurityRuleProtocol.asterisk,
-            priority=next(priority_generator),
-            protocol=SecurityRuleProtocol.asterisk)
+            destination_port_range=dst_port_range,
+            priority=next(rule_priority_generator),
+            protocol=protocol)
 
         self._azure_client.create_nsg_rule(
             resource_group_name=resource_group_name,
@@ -99,7 +120,9 @@ class NetworkSecurityGroupActions:
             rule=rule)
 
     def create_nsg_deny_rule(self, rule_name, resource_group_name, nsg_name, src_address=RouteNextHopType.internet,
-                             dst_address=RouteNextHopType.internet, start_from=None):
+                             dst_address=RouteNextHopType.internet, src_port_range=SecurityRuleProtocol.asterisk,
+                             dst_port_range=SecurityRuleProtocol.asterisk, rule_priority_generator=None,
+                             start_from=None):
         """
 
         :param str rule_name:
@@ -107,6 +130,9 @@ class NetworkSecurityGroupActions:
         :param str nsg_name:
         :param str src_address:
         :param str dst_address:
+        :param str src_port_range:
+        :param str dst_port_range:
+        :param rule_priority_generator:
         :param int start_from:
         :return:
         """
@@ -114,21 +140,35 @@ class NetworkSecurityGroupActions:
         #  for the only one NSG in reservation during the prepare_connectivuty action !!!??? -- seems that it
         #  also used in the deploy actions - there might be dozen of simultauso deployments in the one reservation
         self._logger.info(f"Creating security rule {rule_name} on NSG {nsg_name}...")
-        priority_generator = self._get_rule_priority_generator(resource_group_name=resource_group_name,
-                                                               nsg_name=nsg_name,
-                                                               start_from=start_from)
+        if rule_priority_generator is None:
+            rule_priority_generator = self.get_rule_priority_generator(resource_group_name=resource_group_name,
+                                                                       nsg_name=nsg_name,
+                                                                       start_from=start_from)
         rule = SecurityRule(
             name=rule_name,
             access=SecurityRuleAccess.deny,
             direction="Inbound",
             source_address_prefix=src_address,
-            source_port_range=SecurityRuleProtocol.asterisk,
+            source_port_range=src_port_range,
             destination_address_prefix=dst_address,
-            destination_port_range=SecurityRuleProtocol.asterisk,
-            priority=next(priority_generator),
+            destination_port_range=dst_port_range,
+            priority=next(rule_priority_generator),
             protocol=SecurityRuleProtocol.asterisk)
 
         self._azure_client.create_nsg_rule(
             resource_group_name=resource_group_name,
             nsg_name=nsg_name,
             rule=rule)
+
+    def delete_nsg_rule(self, rule_name, nsg_name, resource_group_name):
+        """
+
+        :param str rule_name:
+        :param str nsg_name:
+        :param str resource_group_name:
+        :return:
+        """
+        self._logger.info(f"Deleting security rule {rule_name} on NSG {nsg_name}...")
+        self._azure_client.delete_nsg_rule(resource_group_name=resource_group_name,
+                                           nsg_name=nsg_name,
+                                           rule_name=rule_name)
