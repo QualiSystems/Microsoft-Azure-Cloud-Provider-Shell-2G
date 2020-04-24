@@ -22,10 +22,13 @@ class CreateNSGCommand(RollbackCommand):
         self._tags = tags
 
     def _execute(self):
-        return self._nsg_actions.create_sandbox_network_security_group(nsg_name=self._nsg_name,
-                                                                       resource_group_name=self._resource_group_name,
-                                                                       region=self._region,
-                                                                       tags=self._tags)
+        return self._nsg_actions.create_network_security_group(nsg_name=self._nsg_name,
+                                                               resource_group_name=self._resource_group_name,
+                                                               region=self._region,
+                                                               tags=self._tags)
 
     def rollback(self):
-        pass
+        return self._nsg_actions.delete_network_security_group(
+            nsg_name=self._nsg_name,
+            resource_group_name=self._resource_group_name)
+

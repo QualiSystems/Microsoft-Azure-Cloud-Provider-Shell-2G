@@ -22,10 +22,11 @@ class CreateSandboxStorageAccountCommand(RollbackCommand):
         self._tags = tags
 
     def _execute(self):
-        self._storage_actions.create_sandbox_storage_account(storage_account_name=self._storage_account_name,
-                                                             resource_group_name=self._resource_group_name,
-                                                             region=self._region,
-                                                             tags=self._tags)
+        self._storage_actions.create_storage_account(storage_account_name=self._storage_account_name,
+                                                     resource_group_name=self._resource_group_name,
+                                                     region=self._region,
+                                                     tags=self._tags)
 
     def rollback(self):
-        pass
+        self._storage_actions.delete_storage_account(storage_account_name=self._storage_account_name,
+                                                     resource_group_name=self._resource_group_name)

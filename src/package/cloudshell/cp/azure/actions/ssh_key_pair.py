@@ -34,8 +34,8 @@ class SSHKeyPairActions:
         """
         self._logger.info(f"Saving SSH public key on the Azure...")
         self._azure_client.create_file(
-            group_name=resource_group_name,
-            storage_name=storage_account_name,
+            resource_group_name=resource_group_name,
+            storage_account_name=storage_account_name,
             share_name=self.SSH_FILE_SHARE_NAME,
             directory_name=self.SSH_FILE_SHARE_DIRECTORY,
             file_name=self.SSH_PUB_KEY_NAME,
@@ -51,9 +51,23 @@ class SSHKeyPairActions:
         """
         self._logger.info(f"Saving SSH private key on the Azure...")
         self._azure_client.create_file(
-            group_name=resource_group_name,
-            storage_name=storage_account_name,
+            resource_group_name=resource_group_name,
+            storage_account_name=storage_account_name,
             share_name=self.SSH_FILE_SHARE_NAME,
             directory_name=self.SSH_FILE_SHARE_DIRECTORY,
             file_name=self.SSH_PRIVATE_KEY_NAME,
             file_content=private_key.encode())
+
+    def get_ssh_public_key(self, resource_group_name, storage_account_name):
+        """
+
+        :param resource_group_name:
+        :param storage_account_name:
+        :return:
+        """
+        self._logger.info(f"Getting SSH public key from the Azure...")
+        return self._azure_client.get_file(resource_group_name=resource_group_name,
+                                           storage_account_name=storage_account_name,
+                                           share_name=self.SSH_FILE_SHARE_NAME,
+                                           directory_name=self.SSH_FILE_SHARE_DIRECTORY,
+                                           file_name=self.SSH_PUB_KEY_NAME)

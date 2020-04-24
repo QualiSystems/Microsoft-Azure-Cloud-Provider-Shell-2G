@@ -15,33 +15,13 @@ def generate_name(name, postfix=None, max_length=24):
     # replace special characters. Remove dash character only if at the beginning.
     name = re.sub("[^a-zA-Z0-9-]|^-+", "", name)
 
-    if not postfix:
-        postfix_len = 9  # length of the unique short string is 8 + 1 char for the dash separator
+    if postfix is None:
         postfix = generate_short_unique_string()
-    else:
-        postfix_len = len(postfix) + 1
 
-    max_name_length = max_length - postfix_len
-    truncated_name = name
-    if len(name) > max_name_length:
-        delta = len(name) - max_name_length
-        truncated_name = name[:-delta]
-    if truncated_name.endswith("-"):
-        truncated_name = truncated_name[:-1]
+    name = name[:max_length-len(postfix)-1]
+    name.rstrip("-")
 
-    return f"{truncated_name}-{postfix}"
-
-
-def normalize_name(name):
-    """Normalize a string to a valid azure resource name by replacing all whitespaces with dashes and lowering the case
-
-    :param str name:
-    :rtype: str
-    """
-    # normalize the app name to a valid Azure vm name
-    if not name:
-        return None
-    return name.lower().replace(" ", "-")
+    return f"{name}-{postfix}"
 
 
 def generate_short_unique_string():
