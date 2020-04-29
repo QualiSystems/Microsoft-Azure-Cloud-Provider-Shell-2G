@@ -1,6 +1,6 @@
 from cloudshell.cp.core.reservation_info import ReservationInfo
 
-from package.cloudshell.cp.azure.utils.name_generator import generate_name
+# from package.cloudshell.cp.azure.utils.name_generator import generate_name
 
 
 class AzureReservationInfo(ReservationInfo):

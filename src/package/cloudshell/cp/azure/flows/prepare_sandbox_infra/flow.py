@@ -1,4 +1,4 @@
-from cloudshell.cp.flows.prepare_sandbox_infra import AbstractPrepareSandboxInfraFlow
+from cloudshell.cp.core.flows.prepare_sandbox_infra import AbstractPrepareSandboxInfraFlow
 
 from package.cloudshell.cp.azure.actions.resource_group import ResourceGroupActions
 from package.cloudshell.cp.azure.actions.storage_account import StorageAccountActions
