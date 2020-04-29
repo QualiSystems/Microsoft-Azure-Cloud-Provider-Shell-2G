@@ -1,0 +1,2 @@
+class AzureTaskTimeoutException(Exception):
+    pass

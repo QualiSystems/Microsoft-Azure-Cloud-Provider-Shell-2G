@@ -1,6 +1,7 @@
 from functools import partial
 
 from msrestazure.azure_exceptions import CloudError
+from azure.mgmt.network import models
 
 
 class NetworkActions:
@@ -8,6 +9,7 @@ class NetworkActions:
     SANDBOX_NETWORK_TAG_VALUE = "sandbox"
     MGMT_NETWORK_TAG_VALUE = "mgmt"
     EXISTING_SUBNET_ERROR = "NetcfgInvalidSubnet"
+    PUBLIC_IP_NAME_TPL = "{interface_name}_PublicIP"
 
     def __init__(self, azure_client, logger):
         """
@@ -135,3 +137,106 @@ class NetworkActions:
                                          subnet_name=subnet.name)
 
         self._logger.info(f"Subnet {subnet.id} was successfully deleted")
+
+    def _get_azure_public_ip_allocation_type(self, ip_type):
+        """Get corresponding Enum type by string ip_type
+
+        :param str ip_type: IP allocation method for the Public IP (Static/Dynamic)
+        """
+        types_map = {
+            "static": models.IPAllocationMethod.static,
+            "dynamic": models.IPAllocationMethod.dynamic,
+        }
+
+        allocation_type = types_map.get(ip_type.lower())
+
+        if not allocation_type:
+            raise Exception(f"Incorrect allocation type '{ip_type}'. Possible values are {types_map.keys()}")
+
+        return allocation_type
+
+    def _get_azure_private_ip_allocation_type(self, ip_type):
+        """Get corresponding Enum type by string ip_type
+
+        :param str ip_type: IP allocation method for the Private IP (Cloudshell Allocation/Azure Allocation)
+        """
+        types_map = {
+            "azure allocation": models.IPAllocationMethod.dynamic,
+            "cloudshell allocation": models.IPAllocationMethod.static,
+        }
+
+        allocation_type = types_map.get(ip_type.lower())
+
+        if not allocation_type:
+            raise Exception(f"Incorrect allocation type '{ip_type}'. Possible values are {types_map.keys()}")
+
+        return allocation_type
+
+    def is_static_private_ip_allocation_type(self, ip_type):
+        """
+
+        :param ip_type:
+        :return:
+        """
+        return self._get_azure_private_ip_allocation_type(ip_type) == models.IPAllocationMethod.static
+
+    def create_vm_network(self, interface_name, subnet, network_security_group, public_ip_type, resource_group_name,
+                          region, tags, private_ip_allocation_method, private_ip_address,
+                          add_public_ip=False, enable_ip_forwarding=False):
+        """
+
+        :param interface_name:
+        :param subnet:
+        :param network_security_group:
+        :param public_ip_type:
+        :param resource_group_name:
+        :param region:
+        :param tags:
+        :param private_ip_allocation_method:
+        :param private_ip_address:
+        :param add_public_ip:
+        :param enable_ip_forwarding:
+        :return:
+        """
+        if add_public_ip:
+            public_ip_address = self._azure_client.create_public_ip(
+                public_ip_name=self.PUBLIC_IP_NAME_TPL.format(interface_name=interface_name),
+                public_ip_allocation_method=self._get_azure_public_ip_allocation_type(public_ip_type),
+                resource_group_name=resource_group_name,
+                region=region,
+                tags=tags)
+        else:
+            public_ip_address = None
+
+        return self._azure_client.create_network_interface(
+            interface_name=interface_name,
+            resource_group_name=resource_group_name,
+            region=region,
+            subnet=subnet,
+            private_ip_allocation_method=self._get_azure_private_ip_allocation_type(private_ip_allocation_method),
+            enable_ip_forwarding=enable_ip_forwarding,
+            network_security_group=network_security_group,
+            private_ip_address=private_ip_address,
+            public_ip_address=public_ip_address,
+            tags=tags)
+
+    def get_vm_network(self, interface_name, resource_group_name):
+        """
+
+        :param interface_name:
+        :param resource_group_name:
+        :return:
+        """
+        return self._azure_client.get_network_interface(interface_name=interface_name,
+                                                        resource_group_name=resource_group_name)
+
+    def get_vm_network_public_ip(self, interface_name, resource_group_name):
+        """
+
+        :param interface_name:
+        :param resource_group_name:
+        :return:
+        """
+        return self._azure_client.get_public_ip(
+            public_ip_name=self.PUBLIC_IP_NAME_TPL.format(interface_name=interface_name),
+            resource_group_name=resource_group_name)

@@ -2,7 +2,37 @@ from cloudshell.cp.core import models
 from cloudshell.shell.standards.core.resource_config_entities import ResourceAttrRO
 
 
+class InboundPortsAttrRO(ResourceAttrRO):
+    def __get__(self, instance, owner):
+        """
+        :param GenericResourceConfig instance:
+        :rtype: str
+        """
+        if instance is None:
+            return self
+
+        attr = instance.attributes.get(self.get_key(instance), self.default)
+        return [port_data.strip() for port_data in attr.split(';') if port_data]
+
+
+class IntegerAttrRO(ResourceAttrRO):
+    def __get__(self, instance, owner):
+        """
+        :param GenericResourceConfig instance:
+        :rtype: str
+        """
+        if instance is None:
+            return self
+
+        attr = instance.attributes.get(self.get_key(instance), self.default)
+        return int(attr) if attr else None
+
+
 class BaseAzureVMDeployApp(models.DeployApp):
+    @property
+    def app_name(self):
+        return self.actionParams.appName.lower().replace(" ", "-")
+
     vm_size = ResourceAttrRO(
         "VM Size", "DEPLOYMENT_PATH"
     )
@@ -31,7 +61,7 @@ class BaseAzureVMDeployApp(models.DeployApp):
         "Extension Script Configurations", "DEPLOYMENT_PATH"
     )
 
-    extension_script_timeout = ResourceAttrRO(
+    extension_script_timeout = IntegerAttrRO(
         "Extension Script Timeout", "DEPLOYMENT_PATH"
     )
 
@@ -39,8 +69,12 @@ class BaseAzureVMDeployApp(models.DeployApp):
         "Public IP Type", "DEPLOYMENT_PATH"
     )
 
-    inbound_ports = ResourceAttrRO(
-        "Inbound Ports", "DEPLOYMENT_PATH"  # todo: needs to be parsed !!!
+    inbound_ports = InboundPortsAttrRO(
+        "Inbound Ports", "DEPLOYMENT_PATH"
+    )
+
+    enable_ip_forwarding = ResourceAttrRO(
+        "Enable IP Forwarding", "DEPLOYMENT_PATH"
     )
 
     allow_all_sandbox_traffic = ResourceAttrRO(
@@ -68,7 +102,7 @@ class AzureVMFromMarketplaceDeployApp(BaseAzureVMDeployApp):
     )
 
 
-class AzureVMFromCustomImageDeployApp(models.DeployApp):
+class AzureVMFromCustomImageDeployApp(BaseAzureVMDeployApp):
     DEPLOYMENT_PATH = "Microsoft Azure 2G.Azure VM From Custom Image 2G"
 
     azure_image = ResourceAttrRO(

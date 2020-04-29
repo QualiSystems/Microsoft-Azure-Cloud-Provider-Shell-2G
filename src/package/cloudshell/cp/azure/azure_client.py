@@ -1,5 +1,7 @@
 from azure.mgmt.compute import ComputeManagementClient
+from azure.mgmt.compute.models import VirtualMachineExtension
 from azure.mgmt.network import NetworkManagementClient
+from azure.mgmt.network.models import NetworkInterfaceIPConfiguration, NetworkInterface
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.resource import SubscriptionClient
 from azure.mgmt.storage import StorageManagementClient
@@ -11,9 +13,23 @@ from msrestazure.azure_active_directory import ServicePrincipalCredentials
 from retrying import retry
 
 from package.cloudshell.cp.azure.utils.retrying import retry_on_connection_error
+from package.cloudshell.cp.azure.utils.retrying import retry_on_retryable_error
+from package.cloudshell.cp.azure.utils.retrying import RETRYABLE_ERROR_MAX_ATTEMPTS, RETRYABLE_WAIT_TIME
 
 
 class AzureAPIClient:
+    NETWORK_INTERFACE_IP_CONFIG_NAME = "default"
+
+    VM_SCRIPT_WINDOWS_PUBLISHER = "Microsoft.Compute"
+    VM_SCRIPT_WINDOWS_EXTENSION_TYPE = "CustomScriptExtension"
+    VM_SCRIPT_WINDOWS_HANDLER_VERSION = "1.9"
+    VM_SCRIPT_WINDOWS_COMMAND_TPL = "powershell.exe -ExecutionPolicy Unrestricted -File " \
+                                    "{file_name} {script_configuration}"
+
+    VM_SCRIPT_LINUX_PUBLISHER = "Microsoft.OSTCExtensions"
+    VM_SCRIPT_LINUX_EXTENSION_TYPE = "CustomScriptForLinux"
+    VM_SCRIPT_LINUX_HANDLER_VERSION = "1.5"
+
     def __init__(self, azure_subscription_id, azure_tenant_id, azure_application_id, azure_application_key, logger):
         """
 
@@ -238,7 +254,7 @@ class AzureAPIClient:
 
         return file_service.get_file_to_text(share_name=share_name,
                                              directory_name=directory_name,
-                                             file_name=file_name)
+                                             file_name=file_name).content
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
     def create_network_security_group(self, network_security_group_name, resource_group_name, region, tags):
@@ -376,3 +392,269 @@ class AzureAPIClient:
                                                      virtual_network_name=vnet_name,
                                                      subnet_name=subnet_name)
         result.wait()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def _get_vm_image_latest_version_name(self, region, publisher_name, offer, sku):
+        """Get latest version name of the VM image
+
+        :param str region:
+        :param str publisher_name:
+        :param str offer:
+        :param str sku:
+        :rtype: str
+        """
+        image_resources = self._compute_client.virtual_machine_images.list(location=region,
+                                                                           publisher_name=publisher_name,
+                                                                           offer=offer,
+                                                                           skus=sku)
+        return image_resources[-1].name
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def get_latest_virtual_machine_image(self, region, publisher_name, offer, sku):
+        """Get latest version of the VM image
+
+        :param str region:
+        :param str publisher_name:
+        :param str offer:
+        :param str sku:
+        """
+        latest_version = self._get_vm_image_latest_version_name(region=region,
+                                                                publisher_name=publisher_name,
+                                                                offer=offer,
+                                                                sku=sku)
+
+        return self._compute_client.virtual_machine_images.get(location=region,
+                                                               publisher_name=publisher_name,
+                                                               offer=offer,
+                                                               skus=sku,
+                                                               version=latest_version)
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def get_custom_virtual_machine_image(self, image_name, resource_group_name):
+        """
+
+        :param image_name:
+        :param resource_group_name:
+        :return:
+        """
+        return self._compute_client.images.get(resource_group_name=resource_group_name,
+                                               image_name=image_name)
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def create_public_ip(self, public_ip_name, resource_group_name, region, public_ip_allocation_method, tags):
+        """
+
+        :param public_ip_name:
+        :param resource_group_name:
+        :param region:
+        :param public_ip_allocation_method:
+        :param tags:
+        :return:
+        """
+        operation_poller = self._network_client.public_ip_addresses.create_or_update(
+            resource_group_name=resource_group_name,
+            public_ip_address_name=public_ip_name,
+            parameters=network_models.PublicIPAddress(
+                location=region,
+                public_ip_allocation_method=public_ip_allocation_method,
+                # todo: move to the constant
+                idle_timeout_in_minutes=4,
+                tags=tags
+            ),
+        )
+
+        return operation_poller.result()
+
+    # todo: move stop_max_attempt_number and wait_fixed to constants !!!!!!!
+    @retry(stop_max_attempt_number=5,
+           wait_fixed=2000,
+           retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYABLE_ERROR_MAX_ATTEMPTS,
+           wait_fixed=RETRYABLE_WAIT_TIME,
+           retry_on_exception=retry_on_retryable_error)
+    def create_network_interface(self, interface_name, resource_group_name, region, subnet,
+                                 private_ip_allocation_method, enable_ip_forwarding, network_security_group, tags,
+                                 public_ip_address=None, private_ip_address=None):
+        """
+
+        :param interface_name:
+        :param resource_group_name:
+        :param public_ip_address:
+        :param region:
+        :param subnet:
+        :param private_ip_allocation_method:
+        :param enable_ip_forwarding:
+        :param network_security_group:
+        :param tags:
+        :param private_ip_address:
+        :return:
+        """
+        ip_config = NetworkInterfaceIPConfiguration(name=self.NETWORK_INTERFACE_IP_CONFIG_NAME,
+                                                    private_ip_allocation_method=private_ip_allocation_method,
+                                                    subnet=subnet,
+                                                    private_ip_address=public_ip_address,
+                                                    public_ip_address=private_ip_address)
+
+        network_interface = NetworkInterface(location=region,
+                                             network_security_group=network_security_group,
+                                             ip_configurations=[ip_config],
+                                             enable_ip_forwarding=enable_ip_forwarding,
+                                             tags=tags)
+
+        operation_poller = self._network_client.network_interfaces.create_or_update(
+            resource_group_name=resource_group_name,
+            network_interface_name=interface_name,
+            parameters=network_interface)
+
+        return operation_poller.result()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def get_public_ip(self, public_ip_name, resource_group_name):
+        """
+
+        :param public_ip_name:
+        :param resource_group_name:
+        :return:
+        """
+        return self._network_client.public_ip_addresses.get(resource_group_name=resource_group_name,
+                                                            public_ip_address_name=public_ip_name)
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def get_network_interface(self, interface_name, resource_group_name):
+        """
+
+        :param interface_name:
+        :param resource_group_name:
+        :return:
+        """
+        return self._network_client.network_interfaces.get(resource_group_name=resource_group_name,
+                                                           network_interface_name=interface_name)
+
+    @retry(stop_max_attempt_number=5,
+           wait_fixed=2000,
+           retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYABLE_ERROR_MAX_ATTEMPTS,
+           wait_fixed=RETRYABLE_WAIT_TIME,
+           retry_on_exception=retry_on_retryable_error)
+    def create_virtual_machine(self, vm_name, virtual_machine, resource_group_name, wait_for_result=True):
+        """
+
+        :param vm_name:
+        :param virtual_machine:
+        :param resource_group_name:
+        :param wait_for_result:
+        :return:
+        """
+        operation_poller = self._compute_client.virtual_machines.create_or_update(
+            resource_group_name=resource_group_name,
+            vm_name=vm_name,
+            parameters=virtual_machine)
+
+        if wait_for_result:
+            return operation_poller.result()
+
+        return operation_poller
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def create_linux_vm_script_extension(self, script_file_path, script_config, vm_name, resource_group_name, region,
+                                         tags,  wait_for_result=True):
+        """
+
+        :param script_file_path:
+        :param script_config:
+        :param vm_name:
+        :param resource_group_name:
+        :param region:
+        :param tags:
+        :param wait_for_result:
+        :return:
+        """
+        file_uris = [file_uri.strip() for file_uri in script_file_path.split(",")]
+
+        vm_extension = VirtualMachineExtension(location=region,
+                                               publisher=self.VM_SCRIPT_LINUX_PUBLISHER,
+                                               type_handler_version=self.VM_SCRIPT_LINUX_HANDLER_VERSION,
+                                               virtual_machine_extension_type=self.VM_SCRIPT_LINUX_EXTENSION_TYPE,
+                                               tags=tags,
+                                               settings={
+                                                   "fileUris": file_uris,
+                                                   "commandToExecute": script_config,
+                                               })
+
+        operation_poller = self._compute_client.virtual_machine_extensions.create_or_update(
+            resource_group_name=resource_group_name,
+            vm_name=vm_name,
+            vm_extension_name=vm_name,
+            extension_parameters=vm_extension)
+
+        if wait_for_result:
+            return operation_poller.result()
+
+        return operation_poller
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def create_windows_vm_script_extension(self, script_file_path, script_config, vm_name, resource_group_name, region,
+                                           tags,  wait_for_result=True):
+        """
+
+        :param script_file_path:
+        :param script_config:
+        :param vm_name:
+        :param resource_group_name:
+        :param region:
+        :param tags:
+        :param wait_for_result:
+        :return:
+        """
+        file_name = script_file_path.rstrip("/").split("/")[-1]
+        vm_extension = VirtualMachineExtension(location=region,
+                                               publisher=self.VM_SCRIPT_WINDOWS_PUBLISHER,
+                                               type_handler_version=self.VM_SCRIPT_WINDOWS_HANDLER_VERSION,
+                                               virtual_machine_extension_type=self.VM_SCRIPT_WINDOWS_EXTENSION_TYPE,
+                                               tags=tags,
+                                               settings={
+                                                   "fileUris": [script_file_path],
+                                                   "commandToExecute": self.VM_SCRIPT_WINDOWS_COMMAND_TPL.format(
+                                                       file_name=file_name,
+                                                       script_configuration=script_config
+                                                   ),
+                                               })
+
+        operation_poller = self._compute_client.virtual_machine_extensions.create_or_update(
+            resource_group_name=resource_group_name,
+            vm_name=vm_name,
+            vm_extension_name=vm_name,
+            extension_parameters=vm_extension)
+
+        if wait_for_result:
+            return operation_poller.result()
+
+        return operation_poller
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def start_vm(self, vm_name, resource_group_name, wait_for_result=True):
+        """
+
+        :param vm_name:
+        :param resource_group_name:
+        :param wait_for_result:
+        :return:
+        """
+        operation_poller = self._compute_client.virtual_machines.start(resource_group_name=resource_group_name,
+                                                                       vm_name=vm_name)
+        if wait_for_result:
+            return operation_poller.result()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def stop_vm(self, vm_name, resource_group_name, wait_for_result=True):
+        """
+
+        :param vm_name:
+        :param resource_group_name:
+        :param wait_for_result:
+        :return:
+        """
+        operation_poller = self._compute_client.virtual_machines.deallocate(resource_group_name=resource_group_name,
+                                                                            vm_name=vm_name)
+        if wait_for_result:
+            return operation_poller.result()

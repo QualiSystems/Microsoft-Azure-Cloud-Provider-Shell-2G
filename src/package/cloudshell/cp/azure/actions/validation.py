@@ -1,3 +1,4 @@
+from azure.mgmt.compute.models import OperatingSystemTypes
 from msrestazure.azure_exceptions import CloudError
 import ipaddress
 
@@ -5,6 +6,8 @@ from package.cloudshell.cp.azure.actions.network import NetworkActions
 
 
 class ValidationActions(NetworkActions):
+    MAX_VM_DISK_SIZE_GB = 1023
+
     def register_azure_providers(self):
         """
 
@@ -113,3 +116,70 @@ class ValidationActions(NetworkActions):
             if not self._is_valid_cidr(cidr):
                 raise Exception(f"CIDR {cidr} under the 'Additional Mgmt Networks' attribute "
                                 f"is not in the valid format")
+
+    def validate_deploy_app_add_public_ip(self, deploy_app, connect_subnets):
+        """
+
+        :param deploy_app:
+        :param connect_subnets:
+        :return:
+        """
+        all_subnets_are_private = connect_subnets and all([subnet.is_private() for subnet in connect_subnets])
+
+        if all_subnets_are_private and deploy_app.add_public_ip:
+            raise Exception("Cannot deploy App with Public IP when connected only to private subnets")
+
+    def validate_deploy_app_inbound_ports(self, deploy_app):
+        """
+
+        :param deploy_app:
+        :return:
+        """
+        if deploy_app.inbound_ports and not deploy_app.add_public_ip:
+            raise Exception('"Inbound Ports" attribute must be empty when "Add Public IP" is False')
+
+    def validate_deploy_app_script_extension(self, deploy_app, image_os):
+        """
+
+        :param deploy_app:
+        :param image_os:
+        :return:
+        """
+        if not deploy_app.extension_script_file:
+            return
+
+        if image_os == OperatingSystemTypes.windows:
+            if not deploy_app.extension_script_file.endswith("ps1"):
+                raise Exception("Invalid format for the PowerShell script. It must have a 'ps1' extension")
+        else:
+            if not deploy_app.extension_script_configurations:
+                raise Exception("Linux Custom Script must have a command to execute in "
+                                "'Extension Script Configurations' attribute")
+
+    def validate_deploy_app_disk_size(self, deploy_app):
+        """
+
+        :param deploy_app:
+        :return:
+        """
+        if not deploy_app.disk_size:
+            return
+
+        try:
+            disk_size_num = int(deploy_app.disk_size)
+        except ValueError:
+            error_msg = f"Invalid Virtual Machine Disk size '{deploy_app.disk_size}'"
+            self._logger.exception(error_msg)
+            raise Exception(error_msg)
+
+        if disk_size_num > self.MAX_VM_DISK_SIZE_GB:
+            raise Exception(f"Virtual Machine Disk size cannot be larger than {self.MAX_VM_DISK_SIZE_GB} GB")
+
+    def validate_vm_size(self, deploy_app_vm_size, cloud_provider_vm_size):
+        """
+
+        :param str deploy_app_vm_size:
+        :param str cloud_provider_vm_size:
+        :return:
+        """
+        return any([deploy_app_vm_size, cloud_provider_vm_size])
