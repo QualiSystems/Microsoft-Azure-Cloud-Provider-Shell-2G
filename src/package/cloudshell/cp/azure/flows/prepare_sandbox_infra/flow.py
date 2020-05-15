@@ -43,47 +43,109 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
         nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
         network_actions = NetworkActions(azure_client=self._azure_client, logger=self._logger)
 
-        with self._rollback_manager:
-            commands.CreateResourceGroupCommand(
-                rollback_manager=self._rollback_manager,
-                cancellation_manager=self._cancellation_manager,
-                resource_group_actions=resource_group_actions,
-                resource_group_name=resource_group_name,
-                region=self._resource_config.region,
-                tags=tags,
-            ).execute()
+        self._create_resource_group(resource_group_actions=resource_group_actions,
+                                    resource_group_name=resource_group_name,
+                                    tags=tags)
 
-            nsg = commands.CreateNSGCommand(
-                rollback_manager=self._rollback_manager,
-                cancellation_manager=self._cancellation_manager,
-                nsg_actions=nsg_actions,
-                nsg_name=nsg_name,
-                resource_group_name=resource_group_name,
-                region=self._resource_config.region,
-                tags=tags,
-            ).execute()
+        nsg = self._create_nsg(nsg_actions=nsg_actions,
+                               nsg_name=nsg_name,
+                               resource_group_name=resource_group_name,
+                               tags=tags)
 
-            self._create_nsg_rules(request_actions=request_actions,
-                                   network_actions=network_actions,
-                                   nsg_actions=nsg_actions,
-                                   resource_group_name=resource_group_name,
-                                   nsg_name=nsg_name)
+        self._create_nsg_rules(request_actions=request_actions,
+                               network_actions=network_actions,
+                               nsg_actions=nsg_actions,
+                               resource_group_name=resource_group_name,
+                               nsg_name=nsg_name)
 
-            self._create_subnets(request_actions=request_actions,
-                                 network_actions=network_actions,
-                                 resource_group_name=resource_group_name,
-                                 network_security_group=nsg)
+        self._create_subnets(request_actions=request_actions,
+                             network_actions=network_actions,
+                             resource_group_name=resource_group_name,
+                             network_security_group=nsg)
 
-    def _create_nsg_rules(self, request_actions, network_actions, nsg_actions, resource_group_name, nsg_name):
+    def create_ssh_keys(self, request_actions):
         """
 
         :param request_actions:
-        :param network_actions:
-        :param nsg_actions:
+        :return: SSH Access key
+        :rtype: str
+        """
+        resource_group_name = self._reservation_info.get_resource_group_name()
+        storage_account_name = self._reservation_info.get_storage_account_name()
+        tags = self._reservation_info.get_tags()
+
+        ssh_actions = SSHKeyPairActions(azure_client=self._azure_client,
+                                        logger=self._logger)
+
+        storage_actions = StorageAccountActions(azure_client=self._azure_client,
+                                                logger=self._logger)
+
+        self._create_storage_account_command(storage_actions=storage_actions,
+                                             storage_account_name=storage_account_name,
+                                             resource_group_name=resource_group_name,
+                                             tags=tags)
+
+        private_key, public_key = ssh_actions.create_ssh_key_pair()
+
+        self._create_ssh_public_key(ssh_actions=ssh_actions,
+                                    public_key=public_key,
+                                    storage_account_name=storage_account_name,
+                                    resource_group_name=resource_group_name)
+
+        self._create_ssh_private_key(ssh_actions=ssh_actions,
+                                     private_key=private_key,
+                                     storage_account_name=storage_account_name,
+                                     resource_group_name=resource_group_name)
+
+        return private_key
+
+    def _create_resource_group(self, resource_group_actions, resource_group_name, tags):
+        """
+
+        :param resource_group_actions:
         :param resource_group_name:
-        :param nsg_name:
+        :param tags:
         :return:
         """
+        commands.CreateResourceGroupCommand(
+            rollback_manager=self._rollback_manager,
+            cancellation_manager=self._cancellation_manager,
+            resource_group_actions=resource_group_actions,
+            resource_group_name=resource_group_name,
+            region=self._resource_config.region,
+            tags=tags,
+        ).execute()
+
+    def _create_nsg(self, nsg_actions, nsg_name, resource_group_name, tags):
+        """
+
+        :param nsg_actions:
+        :param nsg_name:
+        :param resource_group_name:
+        :param tags:
+        :return:
+        """
+        return commands.CreateNSGCommand(
+            rollback_manager=self._rollback_manager,
+            cancellation_manager=self._cancellation_manager,
+            nsg_actions=nsg_actions,
+            nsg_name=nsg_name,
+            resource_group_name=resource_group_name,
+            region=self._resource_config.region,
+            tags=tags,
+        ).execute()
+
+    def _create_nsg_allow_sandbox_traffic_to_subnet_rules(self, request_actions, nsg_actions, nsg_name,
+                                                          resource_group_name):
+        """
+
+        :param request_actions:
+        :param nsg_actions:
+        :param nsg_name:
+        :param resource_group_name:
+        :return:
+        """
+        # todo: we need to use one priority generator here !!!
         for action in request_actions.prepare_subnets:
             commands.CreateAllowSandboxTrafficToSubnetRuleCommand(
                 rollback_manager=self._rollback_manager,
@@ -95,6 +157,17 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
                 subnet_cidr=action.get_cidr(),
             ).execute()
 
+    def _create_nsg_deny_access_to_private_subnet_rules(self, request_actions, nsg_actions, nsg_name,
+                                                        resource_group_name):
+        """
+
+        :param request_actions:
+        :param nsg_actions:
+        :param nsg_name:
+        :param resource_group_name:
+        :return:
+        """
+        # todo: we need to use one priority generator here !!!
         for action in request_actions.prepare_private_subnets:
             commands.CreateDenyAccessToPrivateSubnetRuleCommand(
                 rollback_manager=self._rollback_manager,
@@ -106,6 +179,15 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
                 subnet_cidr=action.get_cidr(),
             ).execute()
 
+    def _create_nsg_additional_mgmt_networks_rules(self, request_actions, nsg_actions, nsg_name, resource_group_name):
+        """
+
+        :param request_actions:
+        :param nsg_actions:
+        :param nsg_name:
+        :param resource_group_name:
+        :return:
+        """
         # todo: we need to use one priority generator here !!!
         for mgmt_network in self._resource_config.additional_mgmt_networks:
             commands.CreateAdditionalMGMTNetworkRuleCommand(
@@ -118,6 +200,17 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
                 sandbox_cidr=request_actions.sandbox_cidr,
             ).execute()
 
+    def _create_nsg_allow_mgmt_vnet_rule(self, request_actions, network_actions, nsg_actions, nsg_name,
+                                         resource_group_name):
+        """
+
+        :param request_actions:
+        :param network_actions:
+        :param nsg_actions:
+        :param nsg_name:
+        :param resource_group_name:
+        :return:
+        """
         commands.CreateAllowMGMTVnetRuleCommand(
             rollback_manager=self._rollback_manager,
             cancellation_manager=self._cancellation_manager,
@@ -129,6 +222,17 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
             sandbox_cidr=request_actions.sandbox_cidr,
         ).execute()
 
+    def _create_nsg_deny_traffic_from_other_sandboxes_rule(self, request_actions, network_actions, nsg_actions,
+                                                           nsg_name, resource_group_name):
+        """
+
+        :param request_actions:
+        :param network_actions:
+        :param nsg_actions:
+        :param nsg_name:
+        :param resource_group_name:
+        :return:
+        """
         commands.CreateDenyTrafficFromOtherSandboxesRuleCommand(
             rollback_manager=self._rollback_manager,
             cancellation_manager=self._cancellation_manager,
@@ -139,6 +243,43 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
             sandbox_cidr=request_actions.sandbox_cidr,
             nsg_name=nsg_name,
         ).execute()
+
+    def _create_nsg_rules(self, request_actions, network_actions, nsg_actions, resource_group_name, nsg_name):
+        """
+
+        :param request_actions:
+        :param network_actions:
+        :param nsg_actions:
+        :param resource_group_name:
+        :param nsg_name:
+        :return:
+        """
+        self._create_nsg_allow_sandbox_traffic_to_subnet_rules(request_actions=request_actions,
+                                                               nsg_actions=nsg_actions,
+                                                               nsg_name=nsg_name,
+                                                               resource_group_name=resource_group_name)
+
+        self._create_nsg_deny_access_to_private_subnet_rules(request_actions=request_actions,
+                                                             nsg_actions=nsg_actions,
+                                                             nsg_name=nsg_name,
+                                                             resource_group_name=resource_group_name)
+
+        self._create_nsg_additional_mgmt_networks_rules(request_actions=request_actions,
+                                                        nsg_actions=nsg_actions,
+                                                        nsg_name=nsg_name,
+                                                        resource_group_name=resource_group_name)
+
+        self._create_nsg_allow_mgmt_vnet_rule(request_actions=request_actions,
+                                              network_actions=network_actions,
+                                              nsg_actions=nsg_actions,
+                                              nsg_name=nsg_name,
+                                              resource_group_name=resource_group_name)
+
+        self._create_nsg_deny_traffic_from_other_sandboxes_rule(request_actions=request_actions,
+                                                                network_actions=network_actions,
+                                                                nsg_actions=nsg_actions,
+                                                                nsg_name=nsg_name,
+                                                                resource_group_name=resource_group_name)
 
     def _create_subnets(self, request_actions, network_actions, resource_group_name, network_security_group):
         """Create additional subnets requested by server
@@ -164,49 +305,57 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
                 network_security_group=network_security_group,
             ).execute()
 
-    def create_ssh_keys(self, request_actions):
+    def _create_storage_account_command(self, storage_actions, storage_account_name, resource_group_name, tags):
         """
 
-        :param request_actions:
-        :return: SSH Access key
-        :rtype: str
+        :param storage_actions:
+        :param storage_account_name:
+        :param resource_group_name:
+        :param tags:
+        :return:
         """
-        resource_group_name = self._reservation_info.get_resource_group_name()
-        storage_account_name = self._reservation_info.get_storage_account_name()
-        tags = self._reservation_info.get_tags()
+        commands.CreateSandboxStorageAccountCommand(
+            rollback_manager=self._rollback_manager,
+            cancellation_manager=self._cancellation_manager,
+            storage_actions=storage_actions,
+            storage_account_name=storage_account_name,
+            resource_group_name=resource_group_name,
+            region=self._resource_config.region,
+            tags=tags
+        ).execute()
 
-        ssh_actions = SSHKeyPairActions(azure_client=self._azure_client,
-                                        logger=self._logger)
+    def _create_ssh_public_key(self, ssh_actions, public_key, storage_account_name, resource_group_name):
+        """
 
-        storage_actions = StorageAccountActions(azure_client=self._azure_client,
-                                                logger=self._logger)
+        :param ssh_actions:
+        :param public_key:
+        :param storage_account_name:
+        :param resource_group_name:
+        :return:
+        """
+        commands.SaveSSHPublicKeyCommand(
+            rollback_manager=self._rollback_manager,
+            cancellation_manager=self._cancellation_manager,
+            storage_account_name=storage_account_name,
+            resource_group_name=resource_group_name,
+            public_key=public_key,
+            ssh_actions=ssh_actions
+        ).execute()
 
-        with self._rollback_manager:
-            commands.CreateSandboxStorageAccountCommand(
-                rollback_manager=self._rollback_manager,
-                cancellation_manager=self._cancellation_manager,
-                storage_actions=storage_actions,
-                storage_account_name=storage_account_name,
-                resource_group_name=resource_group_name,
-                region=self._resource_config.region,
-                tags=tags).execute()
+    def _create_ssh_private_key(self, ssh_actions, private_key, storage_account_name, resource_group_name):
+        """
 
-            private_key, public_key = ssh_actions.create_ssh_key_pair()
-
-            commands.SaveSSHPublicKeyCommand(
-                rollback_manager=self._rollback_manager,
-                cancellation_manager=self._cancellation_manager,
-                storage_account_name=storage_account_name,
-                resource_group_name=resource_group_name,
-                public_key=public_key,
-                ssh_actions=ssh_actions).execute()
-
-            commands.SaveSSHPrivateKeyCommand(
-                rollback_manager=self._rollback_manager,
-                cancellation_manager=self._cancellation_manager,
-                storage_account_name=storage_account_name,
-                resource_group_name=resource_group_name,
-                private_key=private_key,
-                ssh_actions=ssh_actions).execute()
-
-        return private_key
+        :param ssh_actions:
+        :param private_key:
+        :param storage_account_name:
+        :param resource_group_name:
+        :return:
+        """
+        commands.SaveSSHPrivateKeyCommand(
+            rollback_manager=self._rollback_manager,
+            cancellation_manager=self._cancellation_manager,
+            storage_account_name=storage_account_name,
+            resource_group_name=resource_group_name,
+            private_key=private_key,
+            ssh_actions=ssh_actions
+        ).execute()
