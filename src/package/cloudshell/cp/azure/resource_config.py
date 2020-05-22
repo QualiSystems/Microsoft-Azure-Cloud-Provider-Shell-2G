@@ -79,3 +79,23 @@ class AzureResourceConfig(GenericResourceConfig):
         "Private IP Allocation Method", ResourceAttrRO.NAMESPACE.SHELL_NAME
     )
 
+    @classmethod
+    def from_context(cls, shell_name, context, api=None, supported_os=None):
+        """Creates an instance of a Resource by given context.
+
+        :param str shell_name: Shell Name
+        :param list supported_os: list of supported OS
+        :param cloudshell.shell.core.driver_context.ResourceCommandContext context:
+        :param cloudshell.api.cloudshell_api.CloudShellAPISession api:
+        :rtype: GenericResourceConfig
+        """
+        return cls(
+            shell_name=shell_name,
+            name=context.resource.name,
+            fullname=context.resource.fullname,
+            address=context.resource.address,
+            family_name=context.resource.family,
+            attributes=dict(context.resource.attributes),
+            supported_os=supported_os,
+            api=api,
+        )

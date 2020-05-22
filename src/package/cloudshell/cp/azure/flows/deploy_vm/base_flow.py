@@ -54,13 +54,13 @@ class BaseAzureDeployVMFlow:
         """
         raise NotImplementedError(f"Class {type(self)} must implement method '_prepare_storage_profile'")
 
-    def _prepare_vm_instance_data(self, deployed_vm):
+    def _prepare_vm_details_data(self, deployed_vm, resource_group_name):
         """
 
         :param deployed_vm:
         :return:
         """
-        raise NotImplementedError(f"Class {type(self)} must implement method '_prepare_vm_instance_data'")
+        raise NotImplementedError(f"Class {type(self)} must implement method '_prepare_vm_details_data'")
 
     def _validate_deploy_app_request(self, deploy_app, connect_subnets, validation_actions, image_os):
         """
@@ -335,53 +335,6 @@ class BaseAzureDeployVMFlow:
         #                                                                         subnet_nsg_lock,
         #                                                                         start_from=1000)
 
-    def _prepare_vm_network_data(self, deployed_vm, resource_group_name):
-        """
-
-        :param deployed_vm:
-        :param resource_group_name:
-        :return:
-        """
-        #  function to another !!!
-        network_actions = NetworkActions(azure_client=self._azure_client, logger=self._logger)
-
-        vm_network_interfaces = []
-        for network_interface in deployed_vm.network_profile.network_interfaces:
-            interface_name = network_interface.id.split("/")[-1]
-            interface = network_actions.get_vm_network(interface_name=interface_name,
-                                                       resource_group_name=resource_group_name)
-
-            ip_configuration = interface.ip_configurations[0]
-            private_ip_addr = ip_configuration.private_ip_address
-
-            network_data = [
-                VmDetailsProperty(key="IP", value=ip_configuration.private_ip_address),
-                VmDetailsProperty(key="MAC Address", value=interface.mac_address)]
-
-            subnet_name = ip_configuration.subnet.id.split('/')[-1]
-
-            if ip_configuration.public_ip_address:
-                public_ip = network_actions.get_vm_network_public_ip(interface_name=interface_name,
-                                                                     resource_group_name=resource_group_name)
-                network_data.extend([
-                    VmDetailsProperty(key="Public IP", value=public_ip.ip_address),
-                    VmDetailsProperty(key="Public IP Type", value=public_ip.public_ip_allocation_method)])
-
-                public_ip_addr = public_ip.ip_address
-            else:
-                public_ip_addr = ""
-
-            vm_network_interface = VmDetailsNetworkInterface(interfaceId=interface.resource_guid,
-                                                             networkId=subnet_name,
-                                                             isPrimary=interface.primary,
-                                                             networkData=network_data,
-                                                             privateIpAddress=private_ip_addr,
-                                                             publicIpAddress=public_ip_addr)
-
-            vm_network_interfaces.append(vm_network_interface)
-
-        return vm_network_interfaces
-
     def _prepare_deploy_app_result(self, deployed_vm, deploy_app, vm_name, resource_group_name):
         """
 
@@ -408,10 +361,8 @@ class BaseAzureDeployVMFlow:
                               Attribute("User", deploy_app.user),
                               Attribute("Public IP", public_ip)]
 
-        vm_details_data = VmDetailsData(
-            vmInstanceData=self._prepare_vm_instance_data(deployed_vm=deployed_vm),
-            vmNetworkData=self._prepare_vm_network_data(deployed_vm=deployed_vm,
-                                                        resource_group_name=resource_group_name))
+        vm_details_data = self._prepare_vm_details_data(deployed_vm=deployed_vm,
+                                                        resource_group_name=resource_group_name)
 
         deploy_result = DeployAppResult(vmUuid=deployed_vm.vm_id,
                                         vmName=vm_name,
@@ -439,7 +390,6 @@ class BaseAzureDeployVMFlow:
 
         tags = self._reservation_info.get_tags()  # todo: add vm_name tag here
 
-        # todo: seems that we need to pass it to the child class function !!!!
         computer_name = vm_name[:15]  # Windows OS username limit
 
         # todo: create NetworkActions and other actions directly before the usage !! don't pass them from one
@@ -488,12 +438,12 @@ class BaseAzureDeployVMFlow:
                                       virtual_machine=vm,
                                       resource_group_name=resource_group_name)
 
-        # self._create_vm_script_extension(deploy_app=deploy_app,
-        #                                  vm_extension_actions=vm_extension_actions,
-        #                                  image_os_type=image_os,
-        #                                  resource_group_name=resource_group_name,
-        #                                  vm_name=vm_name,
-        #                                  tags=tags)
+        self._create_vm_script_extension(deploy_app=deploy_app,
+                                         vm_extension_actions=vm_extension_actions,
+                                         image_os_type=image_os,
+                                         resource_group_name=resource_group_name,
+                                         vm_name=vm_name,
+                                         tags=tags)
 
         return self._prepare_deploy_app_result(deployed_vm=deployed_vm,
                                                deploy_app=deploy_app,

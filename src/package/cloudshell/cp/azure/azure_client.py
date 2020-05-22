@@ -5,6 +5,7 @@ from azure.mgmt.network.models import NetworkInterfaceIPConfiguration, NetworkIn
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.resource import SubscriptionClient
 from azure.mgmt.storage import StorageManagementClient
+from azure.storage.blob import BlockBlobService
 from azure.storage.file import FileService
 from azure.mgmt.resource.resources.models import ResourceGroup
 from azure.mgmt.storage import models as storage_models
@@ -201,17 +202,57 @@ class AzureAPIClient:
         raise Exception(f"Unable to find access key for the storage account '{storage_account_name}' "
                         f"under the '{resource_group_name}' resource group")
 
+    # todo: add caching for this _get_storage_account_key
     def _get_file_service(self, resource_group_name, storage_account_name):
         """Get Azure file service for given storage
 
         :param str resource_group_name: the name of the resource group on Azure
         :param str storage_account_name: the name of the storage on Azure
-        :return: azure.storage.file.FileService instance
+        :rtype: azure.storage.file.FileService
         """
         account_key = self._get_storage_account_key(resource_group_name=resource_group_name,
                                                     storage_account_name=storage_account_name)
 
         return FileService(account_name=storage_account_name, account_key=account_key)
+
+    # todo: add caching for this _get_storage_account_key
+    def _get_blob_service(self, storage_account_name, resource_group_name):
+        """Get Azure Blob service for given storage
+
+        :param str resource_group_name: the name of the resource group on Azure
+        :param str storage_account_name: the name of the storage on Azure
+        :rtype: azure.storage.blob.BlockBlobService
+        """
+        account_key = self._get_storage_account_key(resource_group_name=resource_group_name,
+                                                    storage_account_name=storage_account_name)
+
+        return BlockBlobService(account_name=storage_account_name, account_key=account_key)
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def delete_blob(self, blob_name, container_name, resource_group_name, storage_account_name):
+        """
+
+        :param blob_name:
+        :param container_name:
+        :param resource_group_name:
+        :param storage_account_name:
+        :return:
+        """
+        blob_service = self._get_blob_service(storage_account_name=storage_account_name,
+                                              resource_group_name=resource_group_name)
+
+        blob_service.delete_blob(container_name=container_name, blob_name=blob_name)
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def delete_managed_disk(self, disk_name, resource_group_name):
+        """
+
+        :param str disk_name:
+        :param str resource_group_name:
+        :return:
+        """
+        operation = self._compute_client.disks.delete(resource_group_name=resource_group_name, disk_name=disk_name)
+        return operation.wait()
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
     def create_file(self, resource_group_name, storage_account_name, share_name,
@@ -274,6 +315,18 @@ class AzureAPIClient:
             parameters=nsg_model)
 
         return operation_poller.result()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def get_network_security_group(self, network_security_group_name, resource_group_name):
+        """
+
+        :param str network_security_group_name:
+        :param str resource_group_name:
+        :return:
+        """
+        return self._network_client.network_security_groups.get(
+            resource_group_name=resource_group_name,
+            network_security_group_name=network_security_group_name)
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
     def delete_network_security_group(self, network_security_group_name, resource_group_name, wait_for_result=False):
@@ -358,6 +411,20 @@ class AzureAPIClient:
 
         if wait_for_result:
             return operation_poller.result()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def get_subnet(self, subnet_name, vnet_name, resource_group_name):
+        """
+
+        :param str subnet_name:
+        :param str vnet_name:
+        :param str resource_group_name:
+        :return:
+        """
+        return self._network_client.subnets.get(
+            resource_group_name=resource_group_name,
+            virtual_network_name=vnet_name,
+            subnet_name=subnet_name)
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
     def update_subnet(self, subnet_name, vnet_name, subnet, resource_group_name, wait_for_result=False):
@@ -530,6 +597,17 @@ class AzureAPIClient:
         return self._network_client.network_interfaces.get(resource_group_name=resource_group_name,
                                                            network_interface_name=interface_name)
 
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def delete_network_interface(self, interface_name, resource_group_name):
+        """
+
+        :param interface_name:
+        :param resource_group_name:
+        :return:
+        """
+        return self._network_client.network_interfaces.delete(resource_group_name=resource_group_name,
+                                                              network_interface_name=interface_name)
+
     @retry(stop_max_attempt_number=5,
            wait_fixed=2000,
            retry_on_exception=retry_on_connection_error)
@@ -606,7 +684,7 @@ class AzureAPIClient:
         :param wait_for_result:
         :return:
         """
-        file_name = script_file_path.rstrip("/").split("/")[-1]
+        file_name = script_file_path.split("/")[-1]
         vm_extension = VirtualMachineExtension(location=region,
                                                publisher=self.VM_SCRIPT_WINDOWS_PUBLISHER,
                                                type_handler_version=self.VM_SCRIPT_WINDOWS_HANDLER_VERSION,
@@ -630,6 +708,16 @@ class AzureAPIClient:
             return operation_poller.result()
 
         return operation_poller
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def get_vm(self, vm_name, resource_group_name):
+        """
+
+        :param vm_name:
+        :param resource_group_name:
+        :return:
+        """
+        return self._compute_client.virtual_machines.get(vm_name=vm_name, resource_group_name=resource_group_name)
 
     @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
     def start_vm(self, vm_name, resource_group_name, wait_for_result=True):
@@ -658,3 +746,27 @@ class AzureAPIClient:
                                                                             vm_name=vm_name)
         if wait_for_result:
             return operation_poller.result()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def delete_vm(self, vm_name, resource_group_name):
+        """
+
+        :param vm_name:
+        :param resource_group_name:
+        :return:
+        """
+        result = self._compute_client.virtual_machines.delete(resource_group_name=resource_group_name,
+                                                              vm_name=vm_name)
+        result.wait()
+
+    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    def delete_public_ip(self, public_ip_name, resource_group_name):
+        """
+
+        :param public_ip_name:
+        :param resource_group_name:
+        :return:
+        """
+        result = self._network_client.public_ip_addresses.delete(public_ip_address_name=public_ip_name,
+                                                                 resource_group_name=resource_group_name)
+        result.wait()

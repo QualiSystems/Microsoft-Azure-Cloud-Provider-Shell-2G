@@ -2,8 +2,6 @@ from package.cloudshell.cp.azure.utils.rollback import RollbackCommand
 
 
 class CreateVMNSGCommand(RollbackCommand):
-    NSG_NAME_TPL = "NSG_{vm_name}"
-
     def __init__(self, rollback_manager, cancellation_manager, nsg_actions, vm_name, resource_group_name,
                  region, tags):
         """
@@ -24,13 +22,13 @@ class CreateVMNSGCommand(RollbackCommand):
         self._tags = tags
 
     def _execute(self):
-        return self._nsg_actions.create_network_security_group(
-            nsg_name=self.NSG_NAME_TPL.format(vm_name=self._vm_name),
+        return self._nsg_actions.create_vm_network_security_group(
+            vm_name=self._vm_name,
             resource_group_name=self._resource_group_name,
             region=self._region,
             tags=self._tags)
 
     def rollback(self):
-        return self._nsg_actions.delete_network_security_group(
-            nsg_name=self.NSG_NAME_TPL.format(vm_name=self._vm_name),
+        return self._nsg_actions.delete_vm_network_security_group(
+            vm_name=self._vm_name,
             resource_group_name=self._resource_group_name)

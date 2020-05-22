@@ -71,3 +71,17 @@ class SSHKeyPairActions:
                                            share_name=self.SSH_FILE_SHARE_NAME,
                                            directory_name=self.SSH_FILE_SHARE_DIRECTORY,
                                            file_name=self.SSH_PUB_KEY_NAME)
+
+    def get_ssh_private_key(self, resource_group_name, storage_account_name):
+        """
+
+        :param resource_group_name:
+        :param storage_account_name:
+        :return:
+        """
+        self._logger.info(f"Getting SSH private key from the Azure...")
+        return self._azure_client.get_file(resource_group_name=resource_group_name,
+                                           storage_account_name=storage_account_name,
+                                           share_name=self.SSH_FILE_SHARE_NAME,
+                                           directory_name=self.SSH_FILE_SHARE_DIRECTORY,
+                                           file_name=self.SSH_PRIVATE_KEY_NAME)
