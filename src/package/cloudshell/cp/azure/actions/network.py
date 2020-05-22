@@ -10,6 +10,10 @@ class NetworkActions:
     MGMT_NETWORK_TAG_VALUE = "mgmt"
     EXISTING_SUBNET_ERROR = "NetcfgInvalidSubnet"
     PUBLIC_IP_NAME_TPL = "{interface_name}_PublicIP"
+    CLOUDSHELL_STATIC_IP_ALLOCATION_TYPE = "static"
+    CLOUDSHELL_DYNAMIC_IP_ALLOCATION_TYPE = "dynamic"
+    AZURE_PRIVATE_IP_ALLOCATION_METHOD = "Azure Allocation"
+    CLOUDSHELL_PRIVATE_IP_ALLOCATION_METHOD = "Cloudshell Allocation"
 
     def __init__(self, azure_client, logger):
         """
@@ -20,7 +24,8 @@ class NetworkActions:
         self._azure_client = azure_client
         self._logger = logger
 
-    def _get_virtual_network_by_tag(self, virtual_networks, tag_key, tag_value):
+    @staticmethod
+    def _get_virtual_network_by_tag(virtual_networks, tag_key, tag_value):
         """
 
         :param list[VirtualNetwork] virtual_networks:
@@ -35,6 +40,16 @@ class NetworkActions:
                     return network
 
         raise Exception(f"Unable to find virtual network with tag {tag_key}={tag_value}")
+
+    @staticmethod
+    def _prepare_sandbox_subnet_name(resource_group_name, cidr):
+        """
+
+        :param resource_group_name:
+        :param cidr:
+        :return:
+        """
+        return f"{resource_group_name}_{cidr}".replace(' ', '').replace('/', '-')
 
     def get_mgmt_virtual_network(self, resource_group_name):
         """
@@ -97,18 +112,93 @@ class NetworkActions:
             # try to create subnet again
             create_subnet_cmd()
 
-    def delete_subnet(self, subnet_name, vnet, resource_group_name):
+    def update_subnet(self, subnet_name, vnet_name, resource_group_name, subnet):
         """
 
         :param str subnet_name:
-        :param vnet:
+        :param str vnet_name:
+        :param str resource_group_name:
+        :param subnet:
+        :return:
+        """
+        # todo: check this This call is atomic because we have to sync subnet updating for the entire sandbox vnet
+        self._logger.info(f"Updating subnet {subnet_name} under: {resource_group_name}/{vnet_name}...")
+        self._azure_client.update_subnet(subnet_name=subnet_name,
+                                         vnet_name=vnet_name,
+                                         resource_group_name=resource_group_name,
+                                         subnet=subnet,
+                                         wait_for_result=True)
+
+    def get_subnet(self, subnet_name, vnet_name, resource_group_name):
+        """
+
+        :param str subnet_name:
+        :param vnet_name:
         :param str resource_group_name:
         :return:
         """
-        self._logger.info(f"Deleting subnet {subnet_name} under: {resource_group_name}/{vnet.name}...")
+        self._logger.info(f"Getting subnet {subnet_name} under: {resource_group_name}/{vnet_name}...")
+        return self._azure_client.get_subnet(subnet_name=subnet_name,
+                                             vnet_name=vnet_name,
+                                             resource_group_name=resource_group_name)
+
+    def delete_subnet(self, subnet_name, vnet_name, resource_group_name):
+        """
+
+        :param str subnet_name:
+        :param vnet_name:
+        :param str resource_group_name:
+        :return:
+        """
+        self._logger.info(f"Deleting subnet {subnet_name} under: {resource_group_name}/{vnet_name}...")
         self._azure_client.delete_subnet(subnet_name=subnet_name,
-                                         vnet_name=vnet.name,
+                                         vnet_name=vnet_name,
                                          resource_group_name=resource_group_name)
+
+    def create_sandbox_subnet(self, cidr, vnet, resource_group_name, mgmt_resource_group_name, network_security_group):
+        """
+
+        :param cidr:
+        :param vnet:
+        :param resource_group_name:
+        :param mgmt_resource_group_name:
+        :param network_security_group:
+        :return:
+        """
+        subnet_name = self._prepare_sandbox_subnet_name(resource_group_name=resource_group_name, cidr=cidr)
+        self.create_subnet(subnet_name=subnet_name,
+                           cidr=cidr,
+                           vnet=vnet,
+                           resource_group_name=mgmt_resource_group_name,
+                           network_security_group=network_security_group)
+
+    def get_sandbox_subnet(self, cidr, vnet_name, resource_group_name, mgmt_resource_group_name):
+        """
+
+        :param str cidr:
+        :param str vnet_name:
+        :param str resource_group_name:
+        :param str mgmt_resource_group_name:
+        :return:
+        """
+        subnet_name = self._prepare_sandbox_subnet_name(resource_group_name=resource_group_name, cidr=cidr)
+        return self.get_subnet(subnet_name=subnet_name,
+                               vnet_name=vnet_name,
+                               resource_group_name=mgmt_resource_group_name)
+
+    def delete_sandbox_subnet(self, cidr, vnet_name, resource_group_name, mgmt_resource_group_name):
+        """
+
+        :param str cidr:
+        :param str vnet_name:
+        :param str resource_group_name:
+        :param str mgmt_resource_group_name:
+        :return:
+        """
+        subnet_name = self._prepare_sandbox_subnet_name(resource_group_name=resource_group_name, cidr=cidr)
+        self.delete_subnet(subnet_name=subnet_name,
+                           vnet_name=vnet_name,
+                           resource_group_name=mgmt_resource_group_name)
 
     def _cleanup_stale_subnet(self, vnet, subnet_cidr, resource_group_name):
         """
@@ -132,20 +222,20 @@ class NetworkActions:
 
             self._logger.info(f"NSG from subnet {subnet.id} was successfully detached")
 
-        self._azure_client.delete_subnet(resource_group_name=resource_group_name,
-                                         vnet_name=vnet.name,
-                                         subnet_name=subnet.name)
+        self.delete_subnet(resource_group_name=resource_group_name,
+                           vnet_name=vnet.name,
+                           subnet_name=subnet.name)
 
         self._logger.info(f"Subnet {subnet.id} was successfully deleted")
 
-    def _get_azure_public_ip_allocation_type(self, ip_type):
+    def _get_azure_ip_allocation_type(self, ip_type):
         """Get corresponding Enum type by string ip_type
 
         :param str ip_type: IP allocation method for the Public IP (Static/Dynamic)
         """
         types_map = {
-            "static": models.IPAllocationMethod.static,
-            "dynamic": models.IPAllocationMethod.dynamic,
+            self.CLOUDSHELL_STATIC_IP_ALLOCATION_TYPE: models.IPAllocationMethod.static,
+            self.CLOUDSHELL_DYNAMIC_IP_ALLOCATION_TYPE: models.IPAllocationMethod.dynamic,
         }
 
         allocation_type = types_map.get(ip_type.lower())
@@ -155,30 +245,31 @@ class NetworkActions:
 
         return allocation_type
 
-    def _get_azure_private_ip_allocation_type(self, ip_type):
-        """Get corresponding Enum type by string ip_type
-
-        :param str ip_type: IP allocation method for the Private IP (Cloudshell Allocation/Azure Allocation)
-        """
-        types_map = {
-            "azure allocation": models.IPAllocationMethod.dynamic,
-            "cloudshell allocation": models.IPAllocationMethod.static,
-        }
-
-        allocation_type = types_map.get(ip_type.lower())
-
-        if not allocation_type:
-            raise Exception(f"Incorrect allocation type '{ip_type}'. Possible values are {types_map.keys()}")
-
-        return allocation_type
-
-    def is_static_private_ip_allocation_type(self, ip_type):
+    def is_static_ip_allocation_type(self, ip_type):
         """
 
         :param ip_type:
         :return:
         """
-        return self._get_azure_private_ip_allocation_type(ip_type) == models.IPAllocationMethod.static
+        return self._get_azure_ip_allocation_type(ip_type) == models.IPAllocationMethod.static
+
+    def convert_cloudshell_private_ip_allocation_type(self, ip_type):
+        """
+
+        :param ip_type:
+        :return:
+        """
+        types_map = {
+            self.AZURE_PRIVATE_IP_ALLOCATION_METHOD: self.CLOUDSHELL_DYNAMIC_IP_ALLOCATION_TYPE,
+            self.CLOUDSHELL_PRIVATE_IP_ALLOCATION_METHOD: self.CLOUDSHELL_STATIC_IP_ALLOCATION_TYPE,
+        }
+
+        allocation_type = types_map.get(ip_type)
+
+        if not allocation_type:
+            raise Exception(f"Incorrect allocation type '{ip_type}'. Possible values are {list(types_map.keys())}")
+
+        return allocation_type
 
     def create_vm_network(self, interface_name, subnet, network_security_group, public_ip_type, resource_group_name,
                           region, tags, private_ip_allocation_method, private_ip_address,
@@ -201,7 +292,7 @@ class NetworkActions:
         if add_public_ip:
             public_ip_address = self._azure_client.create_public_ip(
                 public_ip_name=self.PUBLIC_IP_NAME_TPL.format(interface_name=interface_name),
-                public_ip_allocation_method=self._get_azure_public_ip_allocation_type(public_ip_type),
+                public_ip_allocation_method=self._get_azure_ip_allocation_type(public_ip_type),
                 resource_group_name=resource_group_name,
                 region=region,
                 tags=tags)
@@ -213,7 +304,7 @@ class NetworkActions:
             resource_group_name=resource_group_name,
             region=region,
             subnet=subnet,
-            private_ip_allocation_method=self._get_azure_private_ip_allocation_type(private_ip_allocation_method),
+            private_ip_allocation_method=self._get_azure_ip_allocation_type(private_ip_allocation_method),
             enable_ip_forwarding=enable_ip_forwarding,
             network_security_group=network_security_group,
             private_ip_address=private_ip_address,
@@ -240,3 +331,23 @@ class NetworkActions:
         return self._azure_client.get_public_ip(
             public_ip_name=self.PUBLIC_IP_NAME_TPL.format(interface_name=interface_name),
             resource_group_name=resource_group_name)
+
+    def delete_vm_network(self, interface_name, resource_group_name):
+        """
+
+        :param interface_name:
+        :param resource_group_name:
+        :return:
+        """
+        return self._azure_client.delete_network_interface(interface_name=interface_name,
+                                                           resource_group_name=resource_group_name)
+
+    def delete_public_ip(self, public_ip_name, resource_group_name):
+        """
+
+        :param public_ip_name:
+        :param resource_group_name:
+        :return:
+        """
+        return self._azure_client.delete_public_ip(public_ip_name=public_ip_name,
+                                                   resource_group_name=resource_group_name)

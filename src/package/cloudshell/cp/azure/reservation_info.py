@@ -1,11 +1,9 @@
 from cloudshell.cp.core.reservation_info import ReservationInfo
 
-# from package.cloudshell.cp.azure.utils.name_generator import generate_name
-
 
 class AzureReservationInfo(ReservationInfo):
-    # TODO: SEEMS THAT we van create NSG with this prefix name, without adding resource group UUID !!!!
-    SANDBOX_NSG_NAME_PREFIX = "NSG_sandbox_all_subnets_"
+    # todo: remove reservation id from the sandbox name
+    SANDBOX_NSG_NAME_TPL = "NSG_sandbox_all_subnets_{reservation_id}"
 
     class TagNames:
         created_by = "CreatedBy"
@@ -29,13 +27,6 @@ class AzureReservationInfo(ReservationInfo):
 
         :rtype: str
         """
-        # reservation_id = self.reservation_id.replace("-", "")
-        # # we need to set a static postfix because we want to ensure we get the same storage account name if
-        # # prepare connectivity will run more than once # todo::???? what does in mean ????
-        # # todo: is it OK to do like this without this generation !!! ??????????
-        # return generate_name(name=self.reservation_id,
-        #                      postfix="cs",
-        #                      max_length=24).replace("-", "")
         return self.reservation_id.replace("-", "")[:24]
 
     def get_network_security_group_name(self):
@@ -43,7 +34,7 @@ class AzureReservationInfo(ReservationInfo):
 
         :rtype: str
         """
-        return f"{self.SANDBOX_NSG_NAME_PREFIX}{self.reservation_id}"
+        return self.SANDBOX_NSG_NAME_TPL.format(reservation_id=self.reservation_id)
 
     def get_tags(self):
         """
