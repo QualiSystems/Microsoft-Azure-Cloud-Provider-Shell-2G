@@ -1,4 +1,6 @@
 class VMActions:
+    SUCCEEDED_PROVISIONING_STATE = "Succeeded"
+
     def __init__(self, azure_client, logger):
         """
 
@@ -7,6 +9,29 @@ class VMActions:
         """
         self._azure_client = azure_client
         self._logger = logger
+
+    def get_vm(self, vm_name, resource_group_name):
+        """
+
+        :param vm_name:
+        :param resource_group_name:
+        :return:
+        """
+        return self._azure_client.get_vm(vm_name=vm_name, resource_group_name=resource_group_name)
+
+    def get_active_vm(self, vm_name, resource_group_name):
+        """
+
+        :param vm_name:
+        :param resource_group_name:
+        :return:
+        """
+        vm = self.get_vm(vm_name=vm_name, resource_group_name=resource_group_name)
+
+        if vm.provisioning_state != self.SUCCEEDED_PROVISIONING_STATE:
+            raise Exception("Can't perform action. Azure VM instance is not in the active state")
+
+        return vm
 
     def start_create_vm_task(self, vm_name, virtual_machine, resource_group_name):
         """
@@ -28,8 +53,7 @@ class VMActions:
         :param resource_group_name:
         :return:
         """
-        return self._azure_client.start_vm(vm_name=vm_name,
-                                           resource_group_name=resource_group_name)
+        return self._azure_client.start_vm(vm_name=vm_name, resource_group_name=resource_group_name)
 
     def stop_vm(self, vm_name, resource_group_name):
         """
@@ -38,5 +62,13 @@ class VMActions:
         :param resource_group_name:
         :return:
         """
-        return self._azure_client.stop_vm(vm_name=vm_name,
-                                          resource_group_name=resource_group_name)
+        return self._azure_client.stop_vm(vm_name=vm_name, resource_group_name=resource_group_name)
+
+    def delete_vm(self, vm_name, resource_group_name):
+        """
+
+        :param vm_name:
+        :param resource_group_name:
+        :return:
+        """
+        return self._azure_client.delete_vm(vm_name=vm_name, resource_group_name=resource_group_name)

@@ -1,8 +1,7 @@
 from azure.mgmt.compute import models
-from azure.mgmt.compute.models import StorageAccountTypes
-from cloudshell.cp.core.models import VmDetailsProperty
 
 from package.cloudshell.cp.azure.flows.deploy_vm.base_flow import BaseAzureDeployVMFlow
+from package.cloudshell.cp.azure.actions.vm_details import VMDetailsActions
 
 
 class AzureDeployMarketplaceVMFlow(BaseAzureDeployVMFlow):
@@ -18,22 +17,6 @@ class AzureDeployMarketplaceVMFlow(BaseAzureDeployVMFlow):
                                                          offer=deploy_app.image_offer,
                                                          sku=deploy_app.image_sku)
 
-    def _prepare_vm_instance_data(self, deployed_vm):
-        """
-
-        :param deployed_vm:
-        :return:
-        """
-        return [
-            VmDetailsProperty(key="Image Publisher", value=deployed_vm.storage_profile.image_reference.publisher),
-            VmDetailsProperty(key="Image Offer", value=deployed_vm.storage_profile.image_reference.offer),
-            VmDetailsProperty(key="Image SKU", value=deployed_vm.storage_profile.image_reference.sku),
-            VmDetailsProperty(key="VM Size", value=deployed_vm.hardware_profile.vm_size),
-            VmDetailsProperty(key="Operating System", value=deployed_vm.storage_profile.os_disk.os_type.name),
-            VmDetailsProperty(key="Disk Type", value="HDD" if deployed_vm.storage_profile.os_disk.managed_disk
-                              .storage_account_type == StorageAccountTypes.standard_lrs else "SSD")
-        ]
-
     def _prepare_storage_profile(self, deploy_app, os_disk):
         """
 
@@ -47,3 +30,13 @@ class AzureDeployMarketplaceVMFlow(BaseAzureDeployVMFlow):
                                                   sku=deploy_app.image_sku,
                                                   version=deploy_app.image_version))
 
+    def _prepare_vm_details_data(self, deployed_vm, resource_group_name):
+        """
+
+        :param deployed_vm:
+        :param resource_group_name:
+        :return:
+        """
+        vm_details_actions = VMDetailsActions(azure_client=self._azure_client, logger=self._logger)
+        vm_details_actions.prepare_marketplace_vm_details(virtual_machine=deployed_vm,
+                                                          resource_group_name=resource_group_name)

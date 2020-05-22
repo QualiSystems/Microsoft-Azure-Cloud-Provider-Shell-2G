@@ -20,8 +20,7 @@ class AzureAutoloadFlow:
 
         :return:
         """
-        validation_actions = ValidationActions(azure_client=self._azure_client,
-                                               logger=self._logger)
+        validation_actions = ValidationActions(azure_client=self._azure_client, logger=self._logger)
 
         validation_actions.register_azure_providers()
         validation_actions.validate_azure_region(region=self._resource_config.region)

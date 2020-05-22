@@ -41,8 +41,10 @@ class CreateVMNetworkCommand(RollbackCommand):
         # in the case of dynamic allocation method is ignored
         # purpose of static allocation -> on restart machine, the ip can get lost. By using static we ensure the ip
         # will remain the same
+        private_ip_allocation_method = self._network_actions.convert_cloudshell_private_ip_allocation_type(
+            ip_type=self._private_ip_allocation_method)
 
-        if self._network_actions.is_static_private_ip_allocation_type(ip_type=self._private_ip_allocation_method):
+        if self._network_actions.is_static_ip_allocation_type(ip_type=private_ip_allocation_method):
             private_ip_address = self._cs_ip_pool_manager.get_ip_from_pool(reservation_id=self._reservation_id,
                                                                            subnet_cidr=self._subnet.address_prefix)
         else:
@@ -55,7 +57,7 @@ class CreateVMNetworkCommand(RollbackCommand):
                                                        resource_group_name=self._resource_group_name,
                                                        region=self._region,
                                                        tags=self._tags,
-                                                       private_ip_allocation_method=self._private_ip_allocation_method,
+                                                       private_ip_allocation_method=private_ip_allocation_method,
                                                        private_ip_address=private_ip_address,
                                                        add_public_ip=self._add_public_ip,
                                                        enable_ip_forwarding=self._enable_ip_forwarding)

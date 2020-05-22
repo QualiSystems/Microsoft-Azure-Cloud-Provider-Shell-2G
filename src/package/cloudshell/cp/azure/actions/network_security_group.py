@@ -5,6 +5,7 @@ from azure.mgmt.network.models import SecurityRule
 class NetworkSecurityGroupActions:
     RULE_DEFAULT_PRIORITY = 1000
     RULE_PRIORITY_INCREASE_STEP = 5
+    VM_NSG_NAME_TPL = "NSG_{vm_name}"
 
     def __init__(self, azure_client, logger):
         """
@@ -31,6 +32,18 @@ class NetworkSecurityGroupActions:
             region=region,
             tags=tags)
 
+    def get_network_security_group(self, nsg_name, resource_group_name):
+        """
+
+        :param str nsg_name:
+        :param str resource_group_name:
+        :return:
+        """
+        self._logger.info(f"Getting network security group {nsg_name}...")
+        return self._azure_client.get_network_security_group(
+            network_security_group_name=nsg_name,
+            resource_group_name=resource_group_name)
+
     def delete_network_security_group(self, nsg_name, resource_group_name):
         """
 
@@ -42,6 +55,40 @@ class NetworkSecurityGroupActions:
         self._azure_client.delete_network_security_group(
             network_security_group_name=nsg_name,
             resource_group_name=resource_group_name)
+
+    def create_vm_network_security_group(self, vm_name, resource_group_name, region, tags):
+        """
+
+        :param vm_name:
+        :param resource_group_name:
+        :param region:
+        :param tags:
+        :return:
+        """
+        return self.create_network_security_group(nsg_name=self.VM_NSG_NAME_TPL.format(vm_name=vm_name),
+                                                  resource_group_name=resource_group_name,
+                                                  region=region,
+                                                  tags=tags)
+
+    def get_vm_network_security_group(self, vm_name, resource_group_name):
+        """
+
+        :param vm_name:
+        :param resource_group_name:
+        :return:
+        """
+        self.get_network_security_group(nsg_name=self.VM_NSG_NAME_TPL.format(vm_name=vm_name),
+                                        resource_group_name=resource_group_name)
+
+    def delete_vm_network_security_group(self, vm_name, resource_group_name):
+        """
+
+        :param str vm_name:
+        :param str resource_group_name:
+        :return:
+        """
+        self.delete_network_security_group(nsg_name=self.VM_NSG_NAME_TPL.format(vm_name=vm_name),
+                                           resource_group_name=resource_group_name)
 
     def get_rule_priority_generator(self, resource_group_name, nsg_name, start_from=None):
         """Endless priority generator for NSG rules
