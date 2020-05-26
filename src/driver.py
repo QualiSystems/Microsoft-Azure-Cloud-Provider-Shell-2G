@@ -24,10 +24,6 @@ from package.cloudshell.cp.azure.flows.refresh_ip import AzureRefreshIPFlow
 from package.cloudshell.cp.azure.flows.cleanup import AzureCleanupSandboxInfraFlow
 
 
-# todo: use this decorator???????!!!!!
-from cloudshell.logging.utils.decorators import command_logging
-
-
 class AzureDriver(ResourceDriverInterface):
     SHELL_NAME = "Microsoft Azure 2G"
 
@@ -106,7 +102,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                api=api)
 
             request_actions = PrepareSandboxInfraRequestActions.from_request(request)
-            reservation_info = AzureReservationInfo.from_context(context)
+            reservation_info = AzureReservationInfo.from_resource_context(context)
             cancellation_manager = CancellationContextManager(cancellation_context)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
@@ -142,7 +138,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                api=api)
 
             cancellation_manager = CancellationContextManager(cancellation_context)
-            reservation_info = AzureReservationInfo.from_context(context)
+            reservation_info = AzureReservationInfo.from_resource_context(context)
             cs_ip_pool_manager = CSIPPoolManager(cs_api=api, logger=logger)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
@@ -186,7 +182,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                context=context,
                                                                api=api)
 
-            reservation_info = AzureReservationInfo.from_context(context)
+            reservation_info = AzureReservationInfo.from_resource_context(context)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
                                           azure_tenant_id=resource_config.azure_tenant_id,
@@ -219,7 +215,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                context=context,
                                                                api=api)
 
-            reservation_info = AzureReservationInfo.from_context(context)
+            reservation_info = AzureReservationInfo.from_resource_context(context)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
                                           azure_tenant_id=resource_config.azure_tenant_id,
@@ -258,7 +254,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                context=context,
                                                                api=api)
 
-            reservation_info = AzureReservationInfo.from_context(context)
+            reservation_info = AzureReservationInfo.from_remote_resource_context(context)
             cancellation_manager = CancellationContextManager(cancellation_context)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
@@ -299,7 +295,7 @@ class AzureDriver(ResourceDriverInterface):
 
             request_actions = GetVMDetailsRequestActions.from_request(requests)
             cancellation_manager = CancellationContextManager(cancellation_context)
-            reservation_info = AzureReservationInfo.from_context(context)
+            reservation_info = AzureReservationInfo.from_resource_context(context)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
                                           azure_tenant_id=resource_config.azure_tenant_id,
@@ -329,7 +325,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                context=context,
                                                                api=api)
 
-            reservation_info = AzureReservationInfo.from_context(context.remote_reservation)
+            reservation_info = AzureReservationInfo.from_remote_resource_context(context)
             cs_ip_pool_manager = CSIPPoolManager(cs_api=api, logger=logger)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
@@ -369,7 +365,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                api=api)
 
             request_actions = CleanupSandboxInfraRequestActions.from_request(request)
-            reservation_info = AzureReservationInfo.from_context(context.reservation)
+            reservation_info = AzureReservationInfo.from_resource_context(context)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
                                           azure_tenant_id=resource_config.azure_tenant_id,
@@ -455,7 +451,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                context=context,
                                                                api=api)
 
-            reservation_info = AzureReservationInfo.from_context(context.remote_reservation)
+            reservation_info = AzureReservationInfo.from_remote_resource_context(context)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
                                           azure_tenant_id=resource_config.azure_tenant_id,
@@ -487,7 +483,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                context=context,
                                                                api=api)
 
-            reservation_info = AzureReservationInfo.from_context(context.remote_reservation)
+            reservation_info = AzureReservationInfo.from_remote_resource_context(context)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
                                           azure_tenant_id=resource_config.azure_tenant_id,
@@ -517,7 +513,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                context=context,
                                                                api=api)
 
-            reservation_info = AzureReservationInfo.from_context(context.remote_reservation)
+            reservation_info = AzureReservationInfo.from_remote_resource_context(context)
             cs_ip_pool_manager = CSIPPoolManager(cs_api=api, logger=logger)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
