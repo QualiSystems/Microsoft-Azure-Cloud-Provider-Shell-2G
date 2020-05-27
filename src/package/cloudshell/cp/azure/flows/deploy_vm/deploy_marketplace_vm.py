@@ -38,5 +38,5 @@ class AzureDeployMarketplaceVMFlow(BaseAzureDeployVMFlow):
         :return:
         """
         vm_details_actions = VMDetailsActions(azure_client=self._azure_client, logger=self._logger)
-        vm_details_actions.prepare_marketplace_vm_details(virtual_machine=deployed_vm,
-                                                          resource_group_name=resource_group_name)
+        return vm_details_actions.prepare_marketplace_vm_details(virtual_machine=deployed_vm,
+                                                                 resource_group_name=resource_group_name)

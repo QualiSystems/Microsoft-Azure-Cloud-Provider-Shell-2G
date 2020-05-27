@@ -1,3 +1,4 @@
+from cloudshell.cp.core.flows.deploy import AbstractDeployFlow
 from cloudshell.cp.core.models import DeployAppResult, Attribute, VmDetailsData, VmDetailsProperty, \
     VmDetailsNetworkInterface
 
@@ -15,7 +16,7 @@ from package.cloudshell.cp.azure.utils.rollback import RollbackCommandsManager
 from package.cloudshell.cp.azure.exceptions import AzureTaskTimeoutException
 
 
-class BaseAzureDeployVMFlow:
+class BaseAzureDeployVMFlow(AbstractDeployFlow):
     def __init__(self, resource_config, azure_client, cs_api, reservation_info, cancellation_manager, cs_ip_pool_manager,
                  logger):
         """
@@ -28,13 +29,12 @@ class BaseAzureDeployVMFlow:
         :param cs_ip_pool_manager:
         :param logger:
         """
-        self._resource_config = resource_config
+        super().__init__(resource_config=resource_config, logger=logger)
         self._azure_client = azure_client
         self._cs_api = cs_api
         self._reservation_info = reservation_info
         self._cancellation_manager = cancellation_manager
         self._cs_ip_pool_manager = cs_ip_pool_manager
-        self._logger = logger
         self._rollback_manager = RollbackCommandsManager(logger=self._logger)
 
     def _get_vm_image_os(self, deploy_app, vm_image_actions):
@@ -364,7 +364,9 @@ class BaseAzureDeployVMFlow:
         vm_details_data = self._prepare_vm_details_data(deployed_vm=deployed_vm,
                                                         resource_group_name=resource_group_name)
 
-        deploy_result = DeployAppResult(vmUuid=deployed_vm.vm_id,
+
+        deploy_result = DeployAppResult(actionId=deploy_app.actionId,
+                                        vmUuid=deployed_vm.vm_id,
                                         vmName=vm_name,
                                         deployedAppAddress=private_ip,
                                         deployedAppAttributes=deployed_app_attrs,
@@ -372,7 +374,7 @@ class BaseAzureDeployVMFlow:
 
         return deploy_result
 
-    def deploy(self, request_actions):
+    def _deploy(self, request_actions):
         """
 
         :param request_actions:
