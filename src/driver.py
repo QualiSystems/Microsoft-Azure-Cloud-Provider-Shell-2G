@@ -182,7 +182,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                context=context,
                                                                api=api)
 
-            reservation_info = AzureReservationInfo.from_resource_context(context)
+            reservation_info = AzureReservationInfo.from_remote_resource_context(context)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
                                           azure_tenant_id=resource_config.azure_tenant_id,
@@ -215,7 +215,7 @@ class AzureDriver(ResourceDriverInterface):
                                                                context=context,
                                                                api=api)
 
-            reservation_info = AzureReservationInfo.from_resource_context(context)
+            reservation_info = AzureReservationInfo.from_remote_resource_context(context)
 
             azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
                                           azure_tenant_id=resource_config.azure_tenant_id,
