@@ -23,6 +23,10 @@ class VMExtensionActions:
         :param tags:
         :return:
         """
+        self._logger.info(f"Creating Linux VM Script Extension for VM {vm_name}:\n"
+                          f"Script file: {script_file_path}\n"
+                          f"Script config: {script_config}")
+
         return self._azure_client.create_linux_vm_script_extension(
             script_file_path=script_file_path,
             script_config=script_config,
@@ -44,6 +48,10 @@ class VMExtensionActions:
         :param tags:
         :return:
         """
+        self._logger.info(f"Creating Windows VM Script Extension for VM {vm_name}:\n"
+                          f"Script file: {script_file_path}\n"
+                          f"Script config: {script_config}")
+
         return self._azure_client.create_windows_vm_script_extension(
             script_file_path=script_file_path,
             script_config=script_config,

@@ -24,8 +24,7 @@ class NetworkActions:
         self._azure_client = azure_client
         self._logger = logger
 
-    @staticmethod
-    def _get_virtual_network_by_tag(virtual_networks, tag_key, tag_value):
+    def _get_virtual_network_by_tag(self, virtual_networks, tag_key, tag_value):
         """
 
         :param list[VirtualNetwork] virtual_networks:
@@ -34,6 +33,7 @@ class NetworkActions:
         :return:
         :rtype: VirtualNetwork
         """
+        self._logger.info(f"Getting Virtual Network by tag {tag_key}={tag_value}")
         for network in virtual_networks:
             for network_tag_key, network_tag_value in network.tags.items():
                 if all([network_tag_key == tag_key, network_tag_value == tag_value]):
@@ -290,6 +290,7 @@ class NetworkActions:
         :return:
         """
         if add_public_ip:
+            self._logger.info(f"Creating Public IP for Interface {interface_name}")
             public_ip_address = self._azure_client.create_public_ip(
                 public_ip_name=self.PUBLIC_IP_NAME_TPL.format(interface_name=interface_name),
                 public_ip_allocation_method=self._get_azure_ip_allocation_type(public_ip_type),
@@ -298,6 +299,8 @@ class NetworkActions:
                 tags=tags)
         else:
             public_ip_address = None
+
+        self._logger.info(f"Creating Virtual Machine Interface {interface_name}")
 
         return self._azure_client.create_network_interface(
             interface_name=interface_name,
@@ -318,6 +321,7 @@ class NetworkActions:
         :param resource_group_name:
         :return:
         """
+        self._logger.info(f"Getting Virtual Machine Interface {interface_name}")
         return self._azure_client.get_network_interface(interface_name=interface_name,
                                                         resource_group_name=resource_group_name)
 
@@ -328,6 +332,7 @@ class NetworkActions:
         :param resource_group_name:
         :return:
         """
+        self._logger.info(f"Getting Public IP for Interface {interface_name}")
         return self._azure_client.get_public_ip(
             public_ip_name=self.PUBLIC_IP_NAME_TPL.format(interface_name=interface_name),
             resource_group_name=resource_group_name)
@@ -339,6 +344,7 @@ class NetworkActions:
         :param resource_group_name:
         :return:
         """
+        self._logger.info(f"Deleting Virtual Machine Interface {interface_name}")
         return self._azure_client.delete_network_interface(interface_name=interface_name,
                                                            resource_group_name=resource_group_name)
 
@@ -349,5 +355,6 @@ class NetworkActions:
         :param resource_group_name:
         :return:
         """
+        self._logger.info(f"Deleting Public IP {public_ip_name}")
         return self._azure_client.delete_public_ip(public_ip_name=public_ip_name,
                                                    resource_group_name=resource_group_name)

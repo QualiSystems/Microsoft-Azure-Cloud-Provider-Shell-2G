@@ -17,6 +17,7 @@ class VMImageActions:
         :param sku:
         :return:
         """
+        self._logger.info(f"Getting Marketplace Image OS for Publisher: {publisher_name}, Offer: {offer}, SKU: {sku}")
         image = self._azure_client.get_latest_virtual_machine_image(region=region,
                                                                     publisher_name=publisher_name,
                                                                     offer=offer,
@@ -30,6 +31,7 @@ class VMImageActions:
         :param image_name:
         :return:
         """
+        self._logger.info(f"Getting Custom Image OS for Image: {image_name}")
         image = self._azure_client.get_custom_virtual_machine_image(image_name=image_name,
                                                                     resource_group_name=image_resource_group_name)
         return image.storage_profile.os_disk.os_type
@@ -41,6 +43,7 @@ class VMImageActions:
         :param image_name:
         :return:
         """
+        self._logger.info(f"Getting Custom Image ID for Image: {image_name}")
         image = self._azure_client.get_custom_virtual_machine_image(image_name=image_name,
                                                                     resource_group_name=image_resource_group_name)
         return image.id
