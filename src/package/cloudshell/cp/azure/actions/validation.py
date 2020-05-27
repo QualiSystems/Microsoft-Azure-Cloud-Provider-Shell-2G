@@ -83,6 +83,7 @@ class ValidationActions(NetworkActions):
         :param str region:
         :return:
         """
+        self._logger.info(f"Validating VM size {vm_size}")
         if vm_size:
             available_vm_sizes = [vm_size.name for vm_size in
                                   self._azure_client.get_virtual_machine_sizes_by_region(region)]
@@ -112,6 +113,7 @@ class ValidationActions(NetworkActions):
         :param list[str] mgmt_networks:
         :return:
         """
+        self._logger.info("Validating Deploy App 'Additional Mgmt Networks' attribute")
         for cidr in mgmt_networks:
             if not self._is_valid_cidr(cidr):
                 raise Exception(f"CIDR {cidr} under the 'Additional Mgmt Networks' attribute "
@@ -124,6 +126,7 @@ class ValidationActions(NetworkActions):
         :param connect_subnets:
         :return:
         """
+        self._logger.info("Validating Deploy App 'Add Public IP' attribute")
         all_subnets_are_private = connect_subnets and all([subnet.is_private() for subnet in connect_subnets])
 
         if all_subnets_are_private and deploy_app.add_public_ip:
@@ -135,6 +138,7 @@ class ValidationActions(NetworkActions):
         :param deploy_app:
         :return:
         """
+        self._logger.info("Validating Deploy App 'Inbound Ports' attribute")
         if deploy_app.inbound_ports and not deploy_app.add_public_ip:
             raise Exception('"Inbound Ports" attribute must be empty when "Add Public IP" is False')
 
@@ -145,6 +149,8 @@ class ValidationActions(NetworkActions):
         :param image_os:
         :return:
         """
+        self._logger.info("Validating Deploy App Extension Script")
+
         if not deploy_app.extension_script_file:
             return
 
@@ -162,6 +168,8 @@ class ValidationActions(NetworkActions):
         :param deploy_app:
         :return:
         """
+        self._logger.info("Validating Deploy App VM Disk size")
+
         if not deploy_app.disk_size:
             return
 
@@ -182,4 +190,5 @@ class ValidationActions(NetworkActions):
         :param str cloud_provider_vm_size:
         :return:
         """
+        self._logger.info("Validating VM size")
         return any([deploy_app_vm_size, cloud_provider_vm_size])
