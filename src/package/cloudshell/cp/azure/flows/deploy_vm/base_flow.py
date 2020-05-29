@@ -1,6 +1,5 @@
 from cloudshell.cp.core.flows.deploy import AbstractDeployFlow
-from cloudshell.cp.core.models import DeployAppResult, Attribute, VmDetailsData, VmDetailsProperty, \
-    VmDetailsNetworkInterface
+from cloudshell.cp.core.models import DeployAppResult, Attribute
 
 from azure.mgmt.compute import models as compute_models
 from package.cloudshell.cp.azure.actions.network import NetworkActions
@@ -9,11 +8,11 @@ from package.cloudshell.cp.azure.actions.vm import VMActions
 from package.cloudshell.cp.azure.actions.validation import ValidationActions
 from package.cloudshell.cp.azure.actions.vm_credentials import VMCredentialsActions
 from package.cloudshell.cp.azure.actions.vm_extension import VMExtensionActions
-from package.cloudshell.cp.azure.actions.vm_image import VMImageActions
+from package.cloudshell.cp.azure.exceptions import AzureTaskTimeoutException
 from package.cloudshell.cp.azure.flows.deploy_vm import commands
 from package.cloudshell.cp.azure.utils import name_generator
 from package.cloudshell.cp.azure.utils.rollback import RollbackCommandsManager
-from package.cloudshell.cp.azure.exceptions import AzureTaskTimeoutException
+from package.cloudshell.cp.azure.utils.cs_reservation_output import CloudShellReservationOutput
 
 
 class BaseAzureDeployVMFlow(AbstractDeployFlow):
@@ -36,6 +35,9 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         self._cancellation_manager = cancellation_manager
         self._cs_ip_pool_manager = cs_ip_pool_manager
         self._rollback_manager = RollbackCommandsManager(logger=self._logger)
+        self._cs_reservation_output = CloudShellReservationOutput(cs_api=self._cs_api,
+                                                                  reservation_id=self._reservation_info.reservation_id,
+                                                                  logger=self._logger)
 
     def _get_vm_image_os(self, deploy_app):
         """
@@ -362,7 +364,6 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         vm_details_data = self._prepare_vm_details_data(deployed_vm=deployed_vm,
                                                         resource_group_name=resource_group_name)
 
-
         deploy_result = DeployAppResult(actionId=deploy_app.actionId,
                                         vmUuid=deployed_vm.vm_id,
                                         vmName=vm_name,
@@ -463,16 +464,12 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                 tags=tags)
             try:
                 create_vm_extension_cmd.execute()
-            except AzureTaskTimeoutException as e:  # exception from wait for task
+            except AzureTaskTimeoutException:
                 msg = f"App {deploy_app.app_name} was partially deployed - Custom script extension reached maximum " \
                       f"timeout of {deploy_app.extension_script_timeout/60} minute(s)"
 
-                # todo: rework ths !!!
                 self._logger.warning(msg, exc_info=True)
-                html_format = "<html><body><span style='color: red;'>{0}</span></body></html>".format(str(e))
-                self._cs_api.WriteMessageToReservationOutput(reservationId=self._reservation_info.reservation_id,
-                                                             message=html_format)
-                extension_time_out = True
+                self._cs_reservation_output.write_error_message(message=msg)
 
     def _create_vm(self, vm_name, virtual_machine, resource_group_name):
         """Create and deploy Azure VM from the given parameters
