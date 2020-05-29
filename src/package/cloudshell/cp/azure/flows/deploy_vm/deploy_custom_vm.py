@@ -6,13 +6,14 @@ from package.cloudshell.cp.azure.flows.deploy_vm.base_flow import BaseAzureDeplo
 
 
 class AzureDeployCustomVMFlow(BaseAzureDeployVMFlow):
-    def _get_vm_image_os(self, deploy_app, vm_image_actions):
+    def _get_vm_image_os(self, deploy_app):
         """
 
         :param deploy_app:
-        :param vm_image_actions:
         :return:
         """
+        vm_image_actions = VMImageActions(azure_client=self._azure_client, logger=self._logger)
+
         return vm_image_actions.get_custom_image_os(image_resource_group_name=deploy_app.azure_resource_group,
                                                     image_name=deploy_app.azure_image)
 

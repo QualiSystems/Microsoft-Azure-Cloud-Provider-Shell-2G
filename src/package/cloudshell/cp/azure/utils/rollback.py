@@ -19,7 +19,7 @@ class RollbackCommandsManager:
             for command in self.commands[::-1]:
                 if command.executed:
                     try:
-                        # self.logger.info(f"Running rollback for command {command}")
+                        self.logger.info(f"Running rollback for command {command}")
                         command.rollback()
                     except Exception:
                         print(f"Unable to perform rollback for command {command}")
