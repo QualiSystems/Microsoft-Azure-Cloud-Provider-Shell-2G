@@ -37,7 +37,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         self._cs_ip_pool_manager = cs_ip_pool_manager
         self._rollback_manager = RollbackCommandsManager(logger=self._logger)
 
-    def _get_vm_image_os(self, deploy_app, vm_image_actions):
+    def _get_vm_image_os(self, deploy_app):
         """
 
         :param deploy_app:
@@ -62,15 +62,16 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         """
         raise NotImplementedError(f"Class {type(self)} must implement method '_prepare_vm_details_data'")
 
-    def _validate_deploy_app_request(self, deploy_app, connect_subnets, validation_actions, image_os):
+    def _validate_deploy_app_request(self, deploy_app, connect_subnets, image_os):
         """
 
         :param deploy_app:
         :param connect_subnets:
-        :param validation_actions:
         :param image_os:
         :return:
         """
+        validation_actions = ValidationActions(azure_client=self._azure_client, logger=self._logger)
+
         validation_actions.validate_deploy_app_add_public_ip(deploy_app=deploy_app, connect_subnets=connect_subnets)
         validation_actions.validate_deploy_app_inbound_ports(deploy_app=deploy_app)
         validation_actions.validate_deploy_app_disk_size(deploy_app=deploy_app)
@@ -80,15 +81,16 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
 
         # todo: validate script file path with the head request !!!
 
-    def _create_vm_nsg(self, nsg_actions, resource_group_name, vm_name, tags):
+    def _create_vm_nsg(self, resource_group_name, vm_name, tags):
         """
 
-        :param nsg_actions:
         :param resource_group_name:
         :param vm_name:
         :param tags:
         :return:
         """
+        nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
+
         return commands.CreateVMNSGCommand(
             rollback_manager=self._rollback_manager,
             cancellation_manager=self._cancellation_manager,
@@ -99,16 +101,17 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
             tags=tags,
         ).execute()
 
-    def _create_vm_nsg_inbound_ports_rules(self, deploy_app, vm_name, nsg_actions, vm_nsg, resource_group_name):
+    def _create_vm_nsg_inbound_ports_rules(self, deploy_app, vm_name, vm_nsg, resource_group_name):
         """
 
         :param deploy_app:
         :param vm_name:
-        :param nsg_actions:
         :param vm_nsg:
         :param resource_group_name:
         :return:
         """
+        nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
+
         for inbound_port in deploy_app.inbound_ports:
             commands.CreateAllowInboundPortRuleCommand(
                 rollback_manager=self._rollback_manager,
@@ -120,14 +123,15 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                 resource_group_name=resource_group_name,
             ).execute()
 
-    def _create_vm_nsg_additional_mgmt_networks_rules(self, vm_name, nsg_actions, vm_nsg, resource_group_name):
+    def _create_vm_nsg_additional_mgmt_networks_rules(self, vm_name, vm_nsg, resource_group_name):
         """
 
-        :param nsg_actions:
         :param vm_nsg:
         :param resource_group_name:
         :return:
         """
+        nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
+
         for mgmt_network in self._resource_config.additional_mgmt_networks:
             commands.CreateAllowAdditionalMGMTNetworkRuleCommand(
                 rollback_manager=self._rollback_manager,
@@ -139,15 +143,16 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                 mgmt_network=mgmt_network,
             ).execute()
 
-    def _create_vm_nsg_mgmt_vnet_rule(self, network_actions, nsg_actions, vm_nsg, resource_group_name):
+    def _create_vm_nsg_mgmt_vnet_rule(self, vm_nsg, resource_group_name):
         """
 
-        :param network_actions:
-        :param nsg_actions:
         :param vm_nsg:
         :param resource_group_name:
         :return:
         """
+        nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
+        network_actions = NetworkActions(azure_client=self._azure_client, logger=self._logger)
+
         commands.CreateAllowMGMTVnetRuleCommand(
             rollback_manager=self._rollback_manager,
             cancellation_manager=self._cancellation_manager,
@@ -158,16 +163,17 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
             mgmt_resource_group_name=self._resource_config.management_group_name,
         ).execute()
 
-    def _create_vm_nsg_sandbox_traffic_rules(self, deploy_app, nsg_actions, vm_nsg, resource_group_name):
+    def _create_vm_nsg_sandbox_traffic_rules(self, deploy_app, vm_nsg, resource_group_name):
         """
 
         :param deploy_app:
-        :param nsg_actions:
         :param vm_nsg:
         :param resource_group_name:
         :return:
         """
         if not deploy_app.allow_all_sandbox_traffic:
+            nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
+
             commands.CreateAllowAzureLoadBalancerRuleCommand(
                 rollback_manager=self._rollback_manager,
                 cancellation_manager=self._cancellation_manager,
@@ -184,35 +190,27 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                 resource_group_name=resource_group_name,
             ).execute()
 
-    def _create_vm_nsg_rules(self, deploy_app, vm_name, nsg_actions, network_actions, vm_nsg, resource_group_name):
+    def _create_vm_nsg_rules(self, deploy_app, vm_name, vm_nsg, resource_group_name):
         """
 
         :param deploy_app:
         :param vm_name:
-        :param nsg_actions:
         :param vm_nsg:
         :param resource_group_name:
         :return:
         """
-
         self._create_vm_nsg_inbound_ports_rules(deploy_app=deploy_app,
                                                 vm_name=vm_name,
-                                                nsg_actions=nsg_actions,
                                                 vm_nsg=vm_nsg,
                                                 resource_group_name=resource_group_name)
 
         self._create_vm_nsg_additional_mgmt_networks_rules(vm_name=vm_name,
-                                                           nsg_actions=nsg_actions,
                                                            vm_nsg=vm_nsg,
                                                            resource_group_name=resource_group_name)
 
-        self._create_vm_nsg_mgmt_vnet_rule(network_actions=network_actions,
-                                           nsg_actions=nsg_actions,
-                                           vm_nsg=vm_nsg,
-                                           resource_group_name=resource_group_name)
+        self._create_vm_nsg_mgmt_vnet_rule(vm_nsg=vm_nsg, resource_group_name=resource_group_name)
 
         self._create_vm_nsg_sandbox_traffic_rules(deploy_app=deploy_app,
-                                                  nsg_actions=nsg_actions,
                                                   vm_nsg=vm_nsg,
                                                   resource_group_name=resource_group_name)
 
@@ -394,32 +392,20 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
 
         computer_name = vm_name[:15]  # Windows OS username limit
 
-        # todo: create NetworkActions and other actions directly before the usage !! don't pass them from one
-        validation_actions = ValidationActions(azure_client=self._azure_client, logger=self._logger)
-        network_actions = NetworkActions(azure_client=self._azure_client, logger=self._logger)
-        nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
-        vm_extension_actions = VMExtensionActions(azure_client=self._azure_client, logger=self._logger)
-        vm_image_actions = VMImageActions(azure_client=self._azure_client, logger=self._logger)
-        vm_actions = VMActions(azure_client=self._azure_client, logger=self._logger)
-
-        image_os = self._get_vm_image_os(deploy_app=deploy_app, vm_image_actions=vm_image_actions)
+        image_os = self._get_vm_image_os(deploy_app=deploy_app)
 
         self._validate_deploy_app_request(deploy_app=deploy_app,
                                           connect_subnets=request_actions.connect_subnets,
-                                          validation_actions=validation_actions,
                                           image_os=image_os)
 
-        vm_nsg = self._create_vm_nsg(nsg_actions=nsg_actions,
-                                     resource_group_name=resource_group_name,
+        vm_nsg = self._create_vm_nsg(resource_group_name=resource_group_name,
                                      vm_name=vm_name,
                                      tags=tags)
 
-        # self._create_vm_nsg_rules(deploy_app=deploy_app,
-        #                           vm_name=vm_name,
-        #                           nsg_actions=nsg_actions,
-        #                           network_actions=network_actions,
-        #                           vm_nsg=vm_nsg,
-        #                           resource_group_name=resource_group_name)
+        self._create_vm_nsg_rules(deploy_app=deploy_app,
+                                  vm_name=vm_name,
+                                  vm_nsg=vm_nsg,
+                                  resource_group_name=resource_group_name)
 
         vm_ifaces = self._create_vm_interfaces(deploy_app=deploy_app,
                                                network_security_group=vm_nsg,
@@ -435,13 +421,11 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                               computer_name=computer_name,
                               tags=tags)
 
-        deployed_vm = self._create_vm(vm_actions=vm_actions,
-                                      vm_name=vm_name,
+        deployed_vm = self._create_vm(vm_name=vm_name,
                                       virtual_machine=vm,
                                       resource_group_name=resource_group_name)
 
         self._create_vm_script_extension(deploy_app=deploy_app,
-                                         vm_extension_actions=vm_extension_actions,
                                          image_os_type=image_os,
                                          resource_group_name=resource_group_name,
                                          vm_name=vm_name,
@@ -452,12 +436,10 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                                                vm_name=vm_name,
                                                resource_group_name=resource_group_name)
 
-    def _create_vm_script_extension(self, deploy_app, vm_extension_actions, image_os_type, resource_group_name,
-                                    vm_name, tags):
+    def _create_vm_script_extension(self, deploy_app, image_os_type, resource_group_name, vm_name, tags):
         """
 
         :param deploy_app:
-        :param vm_extension_actions:
         :param image_os_type:
         :param resource_group_name:
         :param vm_name:
@@ -465,6 +447,8 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         :return:
         """
         if deploy_app.extension_script_file:
+            vm_extension_actions = VMExtensionActions(azure_client=self._azure_client, logger=self._logger)
+
             create_vm_extension_cmd = commands.CreateVMExtensionCommand(
                 rollback_manager=self._rollback_manager,
                 cancellation_manager=self._cancellation_manager,
@@ -485,19 +469,20 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
 
                 # todo: rework ths !!!
                 self._logger.warning(msg, exc_info=True)
-                html_format = "<html><body><span style='color: red;'>{0}</span></body></html>".format(e.message)
+                html_format = "<html><body><span style='color: red;'>{0}</span></body></html>".format(str(e))
                 self._cs_api.WriteMessageToReservationOutput(reservationId=self._reservation_info.reservation_id,
                                                              message=html_format)
                 extension_time_out = True
 
-    def _create_vm(self, vm_actions, vm_name, virtual_machine, resource_group_name):
+    def _create_vm(self, vm_name, virtual_machine, resource_group_name):
         """Create and deploy Azure VM from the given parameters
 
-        :param vm_actions:
         :param str vm_name:
         :param azure.mgmt.compute.models.VirtualMachine virtual_machine:
         :param str resource_group_name:
         """
+        vm_actions = VMActions(azure_client=self._azure_client, logger=self._logger)
+
         return commands.CreateVMCommand(
             rollback_manager=self._rollback_manager,
             cancellation_manager=self._cancellation_manager,
