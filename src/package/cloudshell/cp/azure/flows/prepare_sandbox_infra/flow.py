@@ -60,9 +60,9 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
                                resource_group_name=resource_group_name,
                                nsg_name=nsg_name)
 
-        self._create_subnets(request_actions=request_actions,
-                             resource_group_name=resource_group_name,
-                             network_security_group=nsg)
+        return self._create_subnets(request_actions=request_actions,
+                                    resource_group_name=resource_group_name,
+                                    network_security_group=nsg)
 
     def create_ssh_keys(self, request_actions):
         """
@@ -274,13 +274,14 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
         :return:
         """
         network_actions = NetworkActions(azure_client=self._azure_client, logger=self._logger)
+        subnet_result = {}
 
         with self._cancellation_manager:
             sandbox_vnet = network_actions.get_sandbox_virtual_network(
                 resource_group_name=self._resource_config.management_group_name)
 
         for subnet_action in request_actions.prepare_subnets:
-            commands.CreateSubnetCommand(
+            subnet = commands.CreateSubnetCommand(
                 rollback_manager=self._rollback_manager,
                 cancellation_manager=self._cancellation_manager,
                 network_actions=network_actions,
@@ -290,6 +291,10 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
                 mgmt_resource_group_name=self._resource_config.management_group_name,
                 network_security_group=network_security_group,
             ).execute()
+
+            subnet_result[subnet_action.actionId] = subnet.name
+
+        return subnet_result
 
     def _create_storage_account_command(self, storage_account_name, resource_group_name, tags):
         """

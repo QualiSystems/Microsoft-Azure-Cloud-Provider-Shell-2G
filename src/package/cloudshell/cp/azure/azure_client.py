@@ -31,6 +31,8 @@ class AzureAPIClient:
     VM_SCRIPT_LINUX_EXTENSION_TYPE = "CustomScriptForLinux"
     VM_SCRIPT_LINUX_HANDLER_VERSION = "1.5"
 
+    CREATE_PUBLIC_IP_TIMEOUT_IN_MINUTES = 4
+
     def __init__(self, azure_subscription_id, azure_tenant_id, azure_application_id, azure_application_key, logger):
         """
 
@@ -524,8 +526,7 @@ class AzureAPIClient:
             parameters=network_models.PublicIPAddress(
                 location=region,
                 public_ip_allocation_method=public_ip_allocation_method,
-                # todo: move to the constant
-                idle_timeout_in_minutes=4,
+                idle_timeout_in_minutes=self.CREATE_PUBLIC_IP_TIMEOUT_IN_MINUTES,
                 tags=tags
             ),
         )
@@ -559,8 +560,8 @@ class AzureAPIClient:
         ip_config = NetworkInterfaceIPConfiguration(name=self.NETWORK_INTERFACE_IP_CONFIG_NAME,
                                                     private_ip_allocation_method=private_ip_allocation_method,
                                                     subnet=subnet,
-                                                    private_ip_address=public_ip_address,
-                                                    public_ip_address=private_ip_address)
+                                                    private_ip_address=private_ip_address,
+                                                    public_ip_address=public_ip_address)
 
         network_interface = NetworkInterface(location=region,
                                              network_security_group=network_security_group,
