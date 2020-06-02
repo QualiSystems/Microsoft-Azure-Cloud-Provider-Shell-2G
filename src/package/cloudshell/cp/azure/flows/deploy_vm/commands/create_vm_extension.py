@@ -37,7 +37,7 @@ class CreateVMExtensionCommand(RollbackCommand):
 
     def _execute(self):
         if self._image_os_type == OperatingSystemTypes.linux:
-            operation_poller = self._vm_extension_actions.create_windows_vm_script_extension(
+            operation_poller = self._vm_extension_actions.create_linux_vm_script_extension(
                 region=self._region,
                 resource_group_name=self._resource_group_name,
                 vm_name=self._vm_name,
@@ -45,7 +45,7 @@ class CreateVMExtensionCommand(RollbackCommand):
                 script_config=self._script_config,
                 tags=self._tags)
         else:
-            operation_poller = self._vm_extension_actions.create_linux_vm_script_extension(
+            operation_poller = self._vm_extension_actions.create_windows_vm_script_extension(
                 region=self._region,
                 resource_group_name=self._resource_group_name,
                 vm_name=self._vm_name,

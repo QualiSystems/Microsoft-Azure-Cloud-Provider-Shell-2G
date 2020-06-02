@@ -1,5 +1,5 @@
 from cloudshell.cp.core.flows.deploy import AbstractDeployFlow
-from cloudshell.cp.core.models import DeployAppResult, Attribute
+from cloudshell.cp.core.request_actions.models import DeployAppResult, Attribute
 
 from azure.mgmt.compute import models as compute_models
 from package.cloudshell.cp.azure.actions.network import NetworkActions
@@ -28,7 +28,8 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         :param cs_ip_pool_manager:
         :param logger:
         """
-        super().__init__(resource_config=resource_config, logger=logger)
+        super().__init__(logger=logger)
+        self._resource_config = resource_config
         self._azure_client = azure_client
         self._cs_api = cs_api
         self._reservation_info = reservation_info

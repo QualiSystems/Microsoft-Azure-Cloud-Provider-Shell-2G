@@ -14,7 +14,8 @@ class AzureGetVMDetailsFlow(AbstractVMDetailsFlow):
         :param reservation_info:
         :param logging.Logger logger:
         """
-        super().__init__(resource_config=resource_config, logger=logger)
+        super().__init__(logger=logger)
+        self._resource_config = resource_config
         self._azure_client = azure_client
         self._cancellation_manager = cancellation_manager
         self._reservation_info = reservation_info
