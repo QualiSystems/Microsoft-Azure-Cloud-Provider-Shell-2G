@@ -35,9 +35,8 @@ class NetworkActions:
         """
         self._logger.info(f"Getting Virtual Network by tag {tag_key}={tag_value}")
         for network in virtual_networks:
-            for network_tag_key, network_tag_value in network.tags.items():
-                if all([network_tag_key == tag_key, network_tag_value == tag_value]):
-                    return network
+            if network.tags.get(tag_key) == tag_value:
+                return network
 
         raise Exception(f"Unable to find virtual network with tag {tag_key}={tag_value}")
 
@@ -79,6 +78,23 @@ class NetworkActions:
                                                 tag_key=self.NETWORK_TYPE_TAG_NAME,
                                                 tag_value=self.SANDBOX_NETWORK_TAG_VALUE)
 
+    def get_sandbox_subnets(self, resource_group_name, mgmt_resource_group_name):
+        """
+
+        :param resource_group_name:
+        :param mgmt_resource_group_name:
+        :return:
+        """
+        # todo: rework this using some special tags ?
+        sandbox_vnet = self.get_sandbox_virtual_network(resource_group_name=mgmt_resource_group_name)
+        subnets = [subnet for subnet in sandbox_vnet.subnets if resource_group_name in subnet.name]
+
+        if not subnets:
+            raise Exception(f"Unable to find subnets under the Sandbox Virtual Network '{sandbox_vnet.name}' in the "
+                            f"Management Resource Group '{mgmt_resource_group_name}'")
+
+        return subnets
+
     def create_subnet(self, subnet_name, cidr, vnet, resource_group_name, network_security_group):
         """
 
@@ -101,7 +117,7 @@ class NetworkActions:
                                     wait_for_result=True)
 
         try:
-            create_subnet_cmd()
+            return create_subnet_cmd()
         except CloudError as e:
             self._logger.warning(f"Unable to create subnet {subnet_name}", exc_info=True)
 
@@ -110,7 +126,7 @@ class NetworkActions:
 
             self._cleanup_stale_subnet(vnet=vnet, subnet_cidr=cidr, resource_group_name=resource_group_name)
             # try to create subnet again
-            create_subnet_cmd()
+            return create_subnet_cmd()
 
     def update_subnet(self, subnet_name, vnet_name, resource_group_name, subnet):
         """
@@ -166,11 +182,11 @@ class NetworkActions:
         :return:
         """
         subnet_name = self._prepare_sandbox_subnet_name(resource_group_name=resource_group_name, cidr=cidr)
-        self.create_subnet(subnet_name=subnet_name,
-                           cidr=cidr,
-                           vnet=vnet,
-                           resource_group_name=mgmt_resource_group_name,
-                           network_security_group=network_security_group)
+        return self.create_subnet(subnet_name=subnet_name,
+                                  cidr=cidr,
+                                  vnet=vnet,
+                                  resource_group_name=mgmt_resource_group_name,
+                                  network_security_group=network_security_group)
 
     def get_sandbox_subnet(self, cidr, vnet_name, resource_group_name, mgmt_resource_group_name):
         """
