@@ -13,6 +13,7 @@ from package.cloudshell.cp.azure.flows.deploy_vm import commands
 from package.cloudshell.cp.azure.utils import name_generator
 from package.cloudshell.cp.azure.utils.rollback import RollbackCommandsManager
 from package.cloudshell.cp.azure.utils.cs_reservation_output import CloudShellReservationOutput
+from package.cloudshell.cp.azure.utils.tags import AzureTagsManager
 
 
 class BaseAzureDeployVMFlow(AbstractDeployFlow):
@@ -36,6 +37,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         self._cancellation_manager = cancellation_manager
         self._cs_ip_pool_manager = cs_ip_pool_manager
         self._rollback_manager = RollbackCommandsManager(logger=self._logger)
+        self._tags_manager = AzureTagsManager(reservation_info=self._reservation_info)
         self._cs_reservation_output = CloudShellReservationOutput(cs_api=self._cs_api,
                                                                   reservation_id=self._reservation_info.reservation_id,
                                                                   logger=self._logger)
@@ -405,7 +407,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                                                postfix=name_postfix,
                                                max_length=64)
 
-        tags = self._reservation_info.get_tags()  # todo: add vm_name tag here
+        tags = self._tags_manager.get_tags(vm_name=vm_name)
 
         computer_name = vm_name[:15]  # Windows OS username limit
 

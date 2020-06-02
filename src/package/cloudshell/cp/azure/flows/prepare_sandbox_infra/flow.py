@@ -7,6 +7,7 @@ from package.cloudshell.cp.azure.actions.network_security_group import NetworkSe
 from package.cloudshell.cp.azure.actions.network import NetworkActions
 from package.cloudshell.cp.azure.flows.prepare_sandbox_infra import commands
 from package.cloudshell.cp.azure.utils.rollback import RollbackCommandsManager
+from package.cloudshell.cp.azure.utils.tags import AzureTagsManager
 
 
 class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
@@ -25,6 +26,7 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
         self._reservation_info = reservation_info
         self._cancellation_manager = cancellation_manager
         self._rollback_manager = RollbackCommandsManager(logger=self._logger)
+        self._tags_manager = AzureTagsManager(reservation_info=self._reservation_info)
 
     def prepare_cloud_infra(self, request_actions):
         pass
@@ -35,7 +37,7 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
         :param request_actions:
         :return:
         """
-        tags = self._reservation_info.get_tags()
+        tags = self._tags_manager.get_tags()
         resource_group_name = self._reservation_info.get_resource_group_name()
         resource_group_actions = ResourceGroupActions(azure_client=self._azure_client, logger=self._logger)
 
@@ -51,7 +53,7 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
         """
         resource_group_name = self._reservation_info.get_resource_group_name()
         nsg_name = self._reservation_info.get_network_security_group_name()
-        tags = self._reservation_info.get_tags()
+        tags = self._tags_manager.get_tags()
 
         nsg = self._create_nsg(nsg_name=nsg_name,
                                resource_group_name=resource_group_name,
@@ -74,7 +76,7 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
         """
         resource_group_name = self._reservation_info.get_resource_group_name()
         storage_account_name = self._reservation_info.get_storage_account_name()
-        tags = self._reservation_info.get_tags()
+        tags = self._tags_manager.get_tags()
 
         self._create_storage_account_command(storage_account_name=storage_account_name,
                                              resource_group_name=resource_group_name,
