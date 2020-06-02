@@ -96,6 +96,7 @@ class AzureDriver(ResourceDriverInterface):
         """
         with LoggingSessionContext(context) as logger:
             logger.info("Starting Prepare Sandbox Infra command...")
+            logger.debug(f"Request: {request}")
             api = CloudShellSessionContext(context).get_api()
             resource_config = AzureResourceConfig.from_context(shell_name=self.SHELL_NAME,
                                                                context=context,
@@ -132,6 +133,7 @@ class AzureDriver(ResourceDriverInterface):
         """
         with LoggingSessionContext(context) as logger:
             logger.info("Starting Deploy command...")
+            logger.debug(f"Request: {request}")
             api = CloudShellSessionContext(context).get_api()
             resource_config = AzureResourceConfig.from_context(shell_name=self.SHELL_NAME,
                                                                context=context,
@@ -288,6 +290,7 @@ class AzureDriver(ResourceDriverInterface):
         """
         with LoggingSessionContext(context) as logger:
             logger.info("Starting Get VM Details command...")
+            logger.debug(f"Requests: {requests}")
             api = CloudShellSessionContext(context).get_api()
             resource_config = AzureResourceConfig.from_context(shell_name=self.SHELL_NAME,
                                                                context=context,
@@ -387,8 +390,10 @@ class AzureDriver(ResourceDriverInterface):
         :param request:
         :return:
         """
-        pass
-        # return self.azure_shell.create_route_tables(context, request)
+        with LoggingSessionContext(context) as logger:
+            logger.info("Starting Create Route Tables command...")
+            logger.debug(f"Request: {request}")
+            # return self.azure_shell.create_route_tables(context, request)
 
     def SetAppSecurityGroups(self, context, request):
         """Called via cloudshell API call
@@ -407,6 +412,7 @@ class AzureDriver(ResourceDriverInterface):
         """
         with LoggingSessionContext(context) as logger:
             logger.info("Starting Set App Security Groups command...")
+            logger.debug(f"Request: {request}")
             api = CloudShellSessionContext(context).get_api()
             resource_config = AzureResourceConfig.from_context(shell_name=self.SHELL_NAME,
                                                                context=context,
