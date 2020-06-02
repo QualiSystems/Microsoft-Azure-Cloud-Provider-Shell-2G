@@ -77,8 +77,8 @@ class NetworkSecurityGroupActions:
         :param resource_group_name:
         :return:
         """
-        self.get_network_security_group(nsg_name=self.VM_NSG_NAME_TPL.format(vm_name=vm_name),
-                                        resource_group_name=resource_group_name)
+        return self.get_network_security_group(nsg_name=self.VM_NSG_NAME_TPL.format(vm_name=vm_name),
+                                               resource_group_name=resource_group_name)
 
     def delete_vm_network_security_group(self, vm_name, resource_group_name):
         """

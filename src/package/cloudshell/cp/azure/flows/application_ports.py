@@ -31,8 +31,7 @@ class AzureGetApplicationPortsFlow:
         result = [f"App Name: {deployed_app.name}",
                   f"Allow Sandbox Traffic: {deployed_app.allow_all_sandbox_traffic}"]
 
-        # todo: do we need this filter ?? (rule for rule in vm_nsg.security_rules if rule.name.startswith('rule_')
-        for rule in vm_nsg.security_rule:
+        for rule in vm_nsg.security_rules:
             result.append(f"Port(s): {rule.destination_port_range}, "
                           f"Protocol: {rule.protocol}, "
                           f"Destination: {rule.destination_address_prefix}")

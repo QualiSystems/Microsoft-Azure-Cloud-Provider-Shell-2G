@@ -216,32 +216,57 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                                                   vm_nsg=vm_nsg,
                                                   resource_group_name=resource_group_name)
 
-    def _create_vm_interfaces(self, deploy_app, network_security_group, resource_group_name, vm_name, tags):
+    def _create_vm_interfaces(self, deploy_app, connect_subnets, network_security_group, resource_group_name, vm_name, tags):
         """
 
         :param deploy_app:
+        :param connect_subnets:
         :param resource_group_name:
         :param vm_name:
         :return:
         """
         network_actions = NetworkActions(azure_client=self._azure_client, logger=self._logger)
-
-        sandbox_vnet = network_actions.get_sandbox_virtual_network(
-            resource_group_name=self._resource_config.management_group_name)
-
         network_interfaces = []
-        for idx, subnet in enumerate(sandbox_vnet.subnets):
-            # todo: in the prepare infra command, for each prepare subnet action we create subnet in the Sandbox vNet
-            #  now we need to attach all these subnets to the VM. MAYBE REPLACE THIS SUBNETS SEARCH BY TAGS??
-            #  so we will create resource_group tag for each created subnet???? and then use this instead of
-            #  searching by name ??!!!
 
-            if resource_group_name in subnet.name:
+        sandbox_subnets = network_actions.get_sandbox_subnets(
+            resource_group_name=resource_group_name,
+            mgmt_resource_group_name=self._resource_config.management_group_name)
+
+        if connect_subnets:
+            for idx, connect_subnet in enumerate(connect_subnets):
+                subnet = next((subnet for subnet in sandbox_subnets if subnet.name == connect_subnet.subnet_id),
+                              None)
+
+                # todo: should we raise some Exception if we are unable to find correct Subnet
+                self._logger.warning(f"Unable to find subnet with subnet ID: {connect_subnet.subnet_id}")
+                if subnet:
+                    interface = commands.CreateVMNetworkCommand(
+                        rollback_manager=self._rollback_manager,
+                        cancellation_manager=self._cancellation_manager,
+                        network_actions=network_actions,
+                        interface_name=f"{vm_name}_{idx}",
+                        public_ip_type=deploy_app.public_ip_type,
+                        private_ip_allocation_method=self._resource_config.private_ip_allocation_method,
+                        cs_ip_pool_manager=self._cs_ip_pool_manager,
+                        resource_group_name=resource_group_name,
+                        subnet=subnet,
+                        network_security_group=network_security_group,
+                        add_public_ip=all([deploy_app.add_public_ip, subnet.is_public()]),
+                        reservation_id=self._reservation_info.reservation_id,
+                        enable_ip_forwarding=deploy_app.enable_ip_forwarding,
+                        region=self._resource_config.region,
+                        tags=tags,
+                    ).execute()
+
+                    network_interfaces.append(interface)
+
+        else:
+            for idx, subnet in enumerate(sandbox_subnets):
                 interface = commands.CreateVMNetworkCommand(
                     rollback_manager=self._rollback_manager,
                     cancellation_manager=self._cancellation_manager,
                     network_actions=network_actions,
-                    interface_name=f"{vm_name}_{idx}",  # todo: add some other name ??!!??
+                    interface_name=f"{vm_name}_{idx}",  # todo: use some other name ?
                     public_ip_type=deploy_app.public_ip_type,
                     private_ip_allocation_method=self._resource_config.private_ip_allocation_method,
                     cs_ip_pool_manager=self._cs_ip_pool_manager,
@@ -257,38 +282,13 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
 
                 network_interfaces.append(interface)
 
-                # todo: there is a lot of code for the NIcs...
-                # private_ip_address = nic.ip_configurations[0].private_ip_address
-
-                # data.all_private_ip_addresses.append(private_ip_address)
-                # if i == 0:
-                #     data.primary_private_ip_address = private_ip_address
-                #
-                # logger.info("NIC private IP is {}".format(data.primary_private_ip_address))
-                # data.nics.append(nic)
-                #
-                # # once we have the NIC ip, we can create a permissive security rule for inbound ports but only to ip
-                # # inbound ports only works on public subnets! private subnets are allowed all traffic from sandbox
-                # # but no traffic from public addresses.
-                # todo:??? we already created some rules do we need to create previous ones ????!!
-                # if nic_request.is_public:
-                #     logger.info("Adding inbound port rules to sandbox subnets NSG, with ip address as destination {0}"
-                #                 .format(private_ip_address))
-                #     self.security_group_service.create_network_security_group_rules(network_client,
-                #                                                                     data.group_name,
-                #                                                                     subnets_nsg_name,
-                #                                                                     inbound_rules,
-                #                                                                     private_ip_address,
-                #                                                                     subnet_nsg_lock,
-                #                                                                     start_from=1000)
-
         if not network_interfaces:
-            raise Exception("No interface for the VM !!!!")
+            raise Exception(f"Unable to prepare network interfaces for the VM {vm_name}")
 
         network_interfaces[0].primary = True
-
         return network_interfaces
 
+        # todo: create inbound rules one more time?? (now with private IP)
 
         # old original code
         # 3. Create network for vm
@@ -335,28 +335,43 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         #                                                                         subnet_nsg_lock,
         #                                                                         start_from=1000)
 
-    def _prepare_deploy_app_result(self, deployed_vm, deploy_app, vm_name, resource_group_name):
+    def _find_vm_public_ip(self, vm_interfaces, resource_group_name):
+        """
+
+        :param vm_interfaces:
+        :param resource_group_name:
+        :return:
+        """
+
+        for vm_interface in vm_interfaces:
+            if vm_interface.ip_configurations[0].public_ip_address is not None:
+                network_actions = NetworkActions(azure_client=self._azure_client, logger=self._logger)
+                public_ip = network_actions.get_vm_network_public_ip(interface_name=vm_interface.name,
+                                                                     resource_group_name=resource_group_name)
+                return public_ip.ip_address
+
+    def _find_vm_private_ip(self, vm_interfaces):
+        """
+
+        :param vm_interfaces:
+        :return:
+        """
+        for vm_interface in vm_interfaces:
+            if vm_interface.primary:
+                return vm_interface.ip_configurations[0].private_ip_address
+
+    def _prepare_deploy_app_result(self, deployed_vm, deploy_app, vm_interfaces, vm_name, resource_group_name):
         """
 
         :param deployed_vm:
         :param deploy_app:
+        :param vm_interfaces:
         :param vm_name:
         :return:
         """
-        # todo: need to retrieve public IP address somehow (get it from the created vm_network_interfaces???)
-        # if data.nic_requests and any(n.is_public for n in data.nic_requests):
-        #     # the name of the first interface we requested to be connected to a public subnet
-        #     request_to_connect_to_public_subnet = next(n for n in data.nic_requests if n.is_public)
-        #     public_ip_name = get_ip_from_interface_name(request_to_connect_to_public_subnet.interface_name)
-        #     data.public_ip_address = self._get_public_ip_address(network_client=network_client,
-        #                                                          azure_vm_deployment_model=deployment_model,
-        #                                                          group_name=data.group_name,
-        #                                                          cancellation_context=cancellation_context,
-        #                                                          ip_name=public_ip_name,
-        #                                                          logger=logger)
+        public_ip = self._find_vm_public_ip(vm_interfaces=vm_interfaces, resource_group_name=resource_group_name)
+        private_ip = self._find_vm_private_ip(vm_interfaces=vm_interfaces)
 
-        public_ip = None
-        private_ip = None
         deployed_app_attrs = [Attribute("Password", deploy_app.password),
                               Attribute("User", deploy_app.user),
                               Attribute("Public IP", public_ip)]
@@ -409,6 +424,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                                   resource_group_name=resource_group_name)
 
         vm_ifaces = self._create_vm_interfaces(deploy_app=deploy_app,
+                                               connect_subnets=request_actions.connect_subnets,
                                                network_security_group=vm_nsg,
                                                resource_group_name=resource_group_name,
                                                vm_name=vm_name,
@@ -434,6 +450,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
 
         return self._prepare_deploy_app_result(deployed_vm=deployed_vm,
                                                deploy_app=deploy_app,
+                                               vm_interfaces=vm_ifaces,
                                                vm_name=vm_name,
                                                resource_group_name=resource_group_name)
 
@@ -509,7 +526,6 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         network_interfaces[0].primary = True
         return compute_models.NetworkProfile(network_interfaces=network_interfaces)
 
-    # todo: separate methods in some classes? this class also have methods _prepare_* which prepares Deployed VM result
     def _prepare_os_disk(self, deploy_app):
         """
 
@@ -540,6 +556,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         """
         vm_creds_actions = VMCredentialsActions(azure_client=self._azure_client, logger=self._logger)
         linux_configuration = None
+
         if image_os == compute_models.OperatingSystemTypes.linux:
             username, password = vm_creds_actions.prepare_linux_credentials(username=deploy_app.user,
                                                                             password=deploy_app.password)
@@ -586,14 +603,6 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         os_disk = self._prepare_os_disk(deploy_app=deploy_app)
         storage_profile = self._prepare_storage_profile(deploy_app=deploy_app, os_disk=os_disk)
 
-        vm_plan = None
-        # todo: plan ins available only for marketplace images
-        # todo: do we need this plan at all???????? need to check deployed data
-        # if purchase_plan is not None:
-        #     vm_plan = models.Plan(name=purchase_plan.name,
-        #                           publisher=purchase_plan.publisher,
-        #                           product=purchase_plan.product)
-
         return compute_models.VirtualMachine(location=self._resource_config.region,
                                              tags=tags,
                                              os_profile=os_profile,
@@ -601,5 +610,4 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                                              network_profile=network_profile,
                                              storage_profile=storage_profile,
                                              diagnostics_profile=compute_models.DiagnosticsProfile(
-                                                 boot_diagnostics=compute_models.BootDiagnostics(enabled=False)),
-                                             plan=vm_plan)
+                                                 boot_diagnostics=compute_models.BootDiagnostics(enabled=False)))

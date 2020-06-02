@@ -24,11 +24,11 @@ class CreateSubnetCommand(RollbackCommand):
         self._network_security_group = network_security_group
 
     def _execute(self):
-        self._network_actions.create_sandbox_subnet(cidr=self._cidr,
-                                                    vnet=self._vnet,
-                                                    resource_group_name=self._resource_group_name,
-                                                    mgmt_resource_group_name=self._mgmt_resource_group_name,
-                                                    network_security_group=self._network_security_group)
+        return self._network_actions.create_sandbox_subnet(cidr=self._cidr,
+                                                           vnet=self._vnet,
+                                                           resource_group_name=self._resource_group_name,
+                                                           mgmt_resource_group_name=self._mgmt_resource_group_name,
+                                                           network_security_group=self._network_security_group)
 
     def rollback(self):
         self._network_actions.delete_sandbox_subnet(cidr=self._cidr,
