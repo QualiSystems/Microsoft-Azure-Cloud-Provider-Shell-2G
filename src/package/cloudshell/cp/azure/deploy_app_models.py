@@ -1,4 +1,4 @@
-from cloudshell.cp.core import models
+from cloudshell.cp.core.request_actions import models
 from cloudshell.shell.standards.core.resource_config_entities import ResourceAttrRO
 
 

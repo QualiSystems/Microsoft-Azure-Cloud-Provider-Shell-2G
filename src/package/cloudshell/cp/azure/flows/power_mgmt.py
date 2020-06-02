@@ -22,18 +22,6 @@ class AzurePowerManagementFlow:
         :return:
         """
         resource_group_name = self._reservation_info.get_resource_group_name()
-        # todo: do we need to do it here ?????
-        # vm_name = data_holder.name
-        #
-        # extension_time_out = self.vm_custom_params_extractor.get_custom_param_value(
-        #     data_holder.vmdetails.vmCustomParams,
-        #     "extension_time_out")
-        #
-        # if extension_time_out in ["True", "true", "1"]:
-        #     cloudshell_session.SetResourceLiveStatus(resource_full_name, "Error", "Partially deployed app")
-        #
-        #     raise Exception("Partially deployed app: VM Custom Script Extension failed to "
-        #                     "compete within the specified timeout")
 
         vm_actions = VMActions(azure_client=self._azure_client, logger=self._logger)
         vm_actions.start_vm(vm_name=deployed_app.name, resource_group_name=resource_group_name)
