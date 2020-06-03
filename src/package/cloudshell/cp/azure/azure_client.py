@@ -32,6 +32,8 @@ class AzureAPIClient:
     VM_SCRIPT_LINUX_HANDLER_VERSION = "1.5"
 
     CREATE_PUBLIC_IP_TIMEOUT_IN_MINUTES = 4
+    RETRYING_STOP_MAX_ATTEMPT_NUMBER = 5
+    RETRYING_WAIT_FIXED = 2000
 
     def __init__(self, azure_subscription_id, azure_tenant_id, azure_application_id, azure_application_key, logger):
         """
@@ -67,7 +69,8 @@ class AzureAPIClient:
         self._network_client = NetworkManagementClient(credentials=self._credentials,
                                                        subscription_id=self._azure_subscription_id)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_available_regions(self):
         """List all available regions per subscription
 
@@ -76,7 +79,8 @@ class AzureAPIClient:
         locations = self._subscription_client.subscriptions.list_locations(self._azure_subscription_id)
         return list(locations)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def register_provider(self, provider):
         """
 
@@ -85,7 +89,8 @@ class AzureAPIClient:
         """
         self._resource_client.providers.register(provider)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_resource_group(self, resource_group_name):
         """
 
@@ -94,7 +99,8 @@ class AzureAPIClient:
         """
         return self._resource_client.resource_groups.get(resource_group_name=resource_group_name)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_virtual_networks_by_resource_group(self, resource_group_name):
         """
 
@@ -105,7 +111,8 @@ class AzureAPIClient:
         networks_list = self._network_client.virtual_networks.list(resource_group_name)
         return list(networks_list)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_virtual_machine_sizes_by_region(self, region):
         """List available virtual machine sizes within given location
 
@@ -114,7 +121,8 @@ class AzureAPIClient:
         """
         return self._compute_client.virtual_machine_sizes.list(location=region)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def create_resource_group(self, group_name, region, tags):
         """
 
@@ -127,7 +135,8 @@ class AzureAPIClient:
             resource_group_name=group_name,
             parameters=ResourceGroup(location=region, tags=tags))
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def delete_resource_group(self, group_name, wait_for_result=False):
         """
 
@@ -140,7 +149,8 @@ class AzureAPIClient:
         if wait_for_result:
             operation_poller.wait()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def create_storage_account(self, resource_group_name, region, storage_account_name, tags, wait_for_result=False):
         """
 
@@ -170,7 +180,8 @@ class AzureAPIClient:
 
         return storage_account_name
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def delete_storage_account(self, resource_group_name, storage_account_name, wait_for_result=False):
         """
 
@@ -230,7 +241,8 @@ class AzureAPIClient:
 
         return BlockBlobService(account_name=storage_account_name, account_key=account_key)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def delete_blob(self, blob_name, container_name, resource_group_name, storage_account_name):
         """
 
@@ -245,7 +257,8 @@ class AzureAPIClient:
 
         blob_service.delete_blob(container_name=container_name, blob_name=blob_name)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def delete_managed_disk(self, disk_name, resource_group_name):
         """
 
@@ -256,7 +269,8 @@ class AzureAPIClient:
         operation = self._compute_client.disks.delete(resource_group_name=resource_group_name, disk_name=disk_name)
         return operation.wait()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def create_file(self, resource_group_name, storage_account_name, share_name,
                     directory_name, file_name, file_content):
         """Create file on the Azure
@@ -279,7 +293,8 @@ class AzureAPIClient:
                                             file_name=file_name,
                                             file=file_content)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_file(self, resource_group_name, storage_account_name, share_name, directory_name, file_name):
         """Get file from the Azure
 
@@ -299,7 +314,8 @@ class AzureAPIClient:
                                              directory_name=directory_name,
                                              file_name=file_name).content
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def create_network_security_group(self, network_security_group_name, resource_group_name, region, tags):
         """
 
@@ -318,7 +334,8 @@ class AzureAPIClient:
 
         return operation_poller.result()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_network_security_group(self, network_security_group_name, resource_group_name):
         """
 
@@ -330,7 +347,8 @@ class AzureAPIClient:
             resource_group_name=resource_group_name,
             network_security_group_name=network_security_group_name)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def delete_network_security_group(self, network_security_group_name, resource_group_name, wait_for_result=False):
         """
 
@@ -346,7 +364,8 @@ class AzureAPIClient:
         if wait_for_result:
             return operation_poller.wait()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_nsg_rules(self, resource_group_name, nsg_name):
         """
 
@@ -357,7 +376,8 @@ class AzureAPIClient:
         return list(self._network_client.security_rules.list(resource_group_name=resource_group_name,
                                                              network_security_group_name=nsg_name))
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def create_nsg_rule(self, resource_group_name, nsg_name, rule):
         """
 
@@ -374,7 +394,8 @@ class AzureAPIClient:
 
         return operation_poller.result()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def delete_nsg_rule(self, resource_group_name, nsg_name, rule_name, wait_for_result=False):
         """
 
@@ -391,7 +412,8 @@ class AzureAPIClient:
         if wait_for_result:
             operation_poller.wait()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def create_subnet(self, subnet_name, cidr, vnet_name, resource_group_name, network_security_group=None,
                       wait_for_result=False):
         """
@@ -414,7 +436,8 @@ class AzureAPIClient:
         if wait_for_result:
             return operation_poller.result()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_subnet(self, subnet_name, vnet_name, resource_group_name):
         """
 
@@ -428,7 +451,8 @@ class AzureAPIClient:
             virtual_network_name=vnet_name,
             subnet_name=subnet_name)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def update_subnet(self, subnet_name, vnet_name, subnet, resource_group_name, wait_for_result=False):
         """
 
@@ -448,7 +472,8 @@ class AzureAPIClient:
         if wait_for_result:
             return operation_poller.result()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def delete_subnet(self, subnet_name, vnet_name, resource_group_name):
         """
 
@@ -462,7 +487,8 @@ class AzureAPIClient:
                                                      subnet_name=subnet_name)
         result.wait()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def _get_vm_image_latest_version_name(self, region, publisher_name, offer, sku):
         """Get latest version name of the VM image
 
@@ -478,7 +504,8 @@ class AzureAPIClient:
                                                                            skus=sku)
         return image_resources[-1].name
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_latest_virtual_machine_image(self, region, publisher_name, offer, sku):
         """Get latest version of the VM image
 
@@ -498,7 +525,8 @@ class AzureAPIClient:
                                                                skus=sku,
                                                                version=latest_version)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_custom_virtual_machine_image(self, image_name, resource_group_name):
         """
 
@@ -509,7 +537,8 @@ class AzureAPIClient:
         return self._compute_client.images.get(resource_group_name=resource_group_name,
                                                image_name=image_name)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def create_public_ip(self, public_ip_name, resource_group_name, region, public_ip_allocation_method, tags):
         """
 
@@ -533,12 +562,9 @@ class AzureAPIClient:
 
         return operation_poller.result()
 
-    # todo: move stop_max_attempt_number and wait_fixed to constants !!!!!!!
-    @retry(stop_max_attempt_number=5,
-           wait_fixed=2000,
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
            retry_on_exception=retry_on_connection_error)
-    @retry(stop_max_attempt_number=RETRYABLE_ERROR_MAX_ATTEMPTS,
-           wait_fixed=RETRYABLE_WAIT_TIME,
+    @retry(stop_max_attempt_number=RETRYABLE_ERROR_MAX_ATTEMPTS, wait_fixed=RETRYABLE_WAIT_TIME,
            retry_on_exception=retry_on_retryable_error)
     def create_network_interface(self, interface_name, resource_group_name, region, subnet,
                                  private_ip_allocation_method, enable_ip_forwarding, network_security_group, tags,
@@ -576,7 +602,8 @@ class AzureAPIClient:
 
         return operation_poller.result()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_public_ip(self, public_ip_name, resource_group_name):
         """
 
@@ -587,7 +614,8 @@ class AzureAPIClient:
         return self._network_client.public_ip_addresses.get(resource_group_name=resource_group_name,
                                                             public_ip_address_name=public_ip_name)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_network_interface(self, interface_name, resource_group_name):
         """
 
@@ -598,7 +626,8 @@ class AzureAPIClient:
         return self._network_client.network_interfaces.get(resource_group_name=resource_group_name,
                                                            network_interface_name=interface_name)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def delete_network_interface(self, interface_name, resource_group_name):
         """
 
@@ -609,11 +638,9 @@ class AzureAPIClient:
         return self._network_client.network_interfaces.delete(resource_group_name=resource_group_name,
                                                               network_interface_name=interface_name)
 
-    @retry(stop_max_attempt_number=5,
-           wait_fixed=2000,
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
            retry_on_exception=retry_on_connection_error)
-    @retry(stop_max_attempt_number=RETRYABLE_ERROR_MAX_ATTEMPTS,
-           wait_fixed=RETRYABLE_WAIT_TIME,
+    @retry(stop_max_attempt_number=RETRYABLE_ERROR_MAX_ATTEMPTS, wait_fixed=RETRYABLE_WAIT_TIME,
            retry_on_exception=retry_on_retryable_error)
     def create_virtual_machine(self, vm_name, virtual_machine, resource_group_name, wait_for_result=True):
         """
@@ -634,7 +661,8 @@ class AzureAPIClient:
 
         return operation_poller
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def create_linux_vm_script_extension(self, script_file_path, script_config, vm_name, resource_group_name, region,
                                          tags,  wait_for_result=True):
         """
@@ -671,7 +699,8 @@ class AzureAPIClient:
 
         return operation_poller
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def create_windows_vm_script_extension(self, script_file_path, script_config, vm_name, resource_group_name, region,
                                            tags,  wait_for_result=True):
         """
@@ -710,7 +739,8 @@ class AzureAPIClient:
 
         return operation_poller
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def get_vm(self, vm_name, resource_group_name):
         """
 
@@ -720,7 +750,8 @@ class AzureAPIClient:
         """
         return self._compute_client.virtual_machines.get(vm_name=vm_name, resource_group_name=resource_group_name)
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def start_vm(self, vm_name, resource_group_name, wait_for_result=True):
         """
 
@@ -734,7 +765,8 @@ class AzureAPIClient:
         if wait_for_result:
             return operation_poller.result()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def stop_vm(self, vm_name, resource_group_name, wait_for_result=True):
         """
 
@@ -748,7 +780,8 @@ class AzureAPIClient:
         if wait_for_result:
             return operation_poller.result()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def delete_vm(self, vm_name, resource_group_name):
         """
 
@@ -760,7 +793,8 @@ class AzureAPIClient:
                                                               vm_name=vm_name)
         result.wait()
 
-    @retry(stop_max_attempt_number=5, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def delete_public_ip(self, public_ip_name, resource_group_name):
         """
 
