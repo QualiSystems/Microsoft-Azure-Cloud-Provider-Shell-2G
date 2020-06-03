@@ -50,6 +50,7 @@ class AzureAPIClient:
         self._azure_application_id = azure_application_id
         self._azure_application_key = azure_application_key
         self._logger = logger
+        self._cached_storage_account_keys = {}
 
         self._credentials = ServicePrincipalCredentials(client_id=azure_application_id,
                                                         secret=azure_application_key,
@@ -200,7 +201,8 @@ class AzureAPIClient:
 
         return storage_account_name
 
-    @retry(stop_max_attempt_number=20, wait_fixed=2000, retry_on_exception=retry_on_connection_error)
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
     def _get_storage_account_key(self, resource_group_name, storage_account_name):
         """Get first storage account access key for some storage
 
@@ -208,14 +210,22 @@ class AzureAPIClient:
         :param str storage_account_name: name of the storage on Azure
         :rtype: str
         """
+        cache_key = (resource_group_name, storage_account_name)
+
+        if cache_key in self._cached_storage_account_keys:
+            return self._cached_storage_account_keys[cache_key]
+
         account_keys = self._storage_client.storage_accounts.list_keys(resource_group_name, storage_account_name)
-        for account_key in account_keys.keys:
-            return account_key.value
 
-        raise Exception(f"Unable to find access key for the storage account '{storage_account_name}' "
-                        f"under the '{resource_group_name}' resource group")
+        if not account_keys.keys:
+            raise Exception(f"Unable to find access key for the storage account '{storage_account_name}' "
+                            f"under the '{resource_group_name}' resource group")
 
-    # todo: add caching for this _get_storage_account_key
+        account_key = account_keys.keys[0].value
+        self._cached_storage_account_keys[cache_key] = account_key
+
+        return account_key
+
     def _get_file_service(self, resource_group_name, storage_account_name):
         """Get Azure file service for given storage
 
@@ -228,7 +238,6 @@ class AzureAPIClient:
 
         return FileService(account_name=storage_account_name, account_key=account_key)
 
-    # todo: add caching for this _get_storage_account_key
     def _get_blob_service(self, storage_account_name, resource_group_name):
         """Get Azure Blob service for given storage
 
