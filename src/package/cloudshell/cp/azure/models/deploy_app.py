@@ -1,6 +1,8 @@
 from cloudshell.cp.core.request_actions import models
 from cloudshell.shell.standards.core.resource_config_entities import ResourceAttrRO
 
+from package.cloudshell.cp.azure import constants
+
 
 class InboundPortsAttrRO(ResourceAttrRO):
     def __get__(self, instance, owner):
@@ -83,7 +85,7 @@ class BaseAzureVMDeployApp(models.DeployApp):
 
 
 class AzureVMFromMarketplaceDeployApp(BaseAzureVMDeployApp):
-    DEPLOYMENT_PATH = "Microsoft Azure 2G.Azure VM From Marketplace 2G"
+    DEPLOYMENT_PATH = constants.AZURE_VM_FROM_MARKETPLACE_DEPLOYMENT_PATH
 
     image_publisher = ResourceAttrRO(
         "Image Publisher", "DEPLOYMENT_PATH"
@@ -103,7 +105,7 @@ class AzureVMFromMarketplaceDeployApp(BaseAzureVMDeployApp):
 
 
 class AzureVMFromCustomImageDeployApp(BaseAzureVMDeployApp):
-    DEPLOYMENT_PATH = "Microsoft Azure 2G.Azure VM From Custom Image 2G"
+    DEPLOYMENT_PATH = constants.AZURE_VM_FROM_CUSTOM_IMAGE_DEPLOYMENT_PATH
 
     azure_image = ResourceAttrRO(
         "Azure Image", "DEPLOYMENT_PATH"
