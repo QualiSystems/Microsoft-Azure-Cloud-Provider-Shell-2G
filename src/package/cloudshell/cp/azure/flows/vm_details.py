@@ -2,6 +2,7 @@ from cloudshell.cp.core.flows.vm_details import AbstractVMDetailsFlow
 
 from package.cloudshell.cp.azure.actions.vm import VMActions
 from package.cloudshell.cp.azure.actions.vm_details import VMDetailsActions
+from package.cloudshell.cp.azure.models.deployed_app import AzureVMFromMarketplaceDeployedApp
 
 
 class AzureGetVMDetailsFlow(AbstractVMDetailsFlow):
@@ -34,8 +35,7 @@ class AzureGetVMDetailsFlow(AbstractVMDetailsFlow):
         with self._cancellation_manager:
             vm = vm_actions.get_vm(vm_name=deployed_app.name, resource_group_name=resource_group_name)
 
-        # todo: override deployed_app model instead?????
-        if deployed_app.deployment_service_model == "Microsoft Azure 2G.Azure VM From Marketplace 2G":
+        if isinstance(deployed_app, AzureVMFromMarketplaceDeployedApp):
             return vm_details_actions.prepare_marketplace_vm_details(virtual_machine=vm,
                                                                      resource_group_name=resource_group_name)
 
