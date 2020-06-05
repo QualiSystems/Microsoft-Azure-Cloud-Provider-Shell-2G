@@ -1,17 +1,20 @@
 from cloudshell.cp.core.cancellation_manager import CancellationContextManager
 from cloudshell.cp.core.request_actions import DeployVMRequestActions, PrepareSandboxInfraRequestActions, \
-    GetVMDetailsRequestActions, DeployedApp, CleanupSandboxInfraRequestActions
+    GetVMDetailsRequestActions, CleanupSandboxInfraRequestActions, DeployedVMRequestActions
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
 from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
 from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 
+from package.cloudshell.cp.azure import constants
 from package.cloudshell.cp.azure.azure_client import AzureAPIClient
 from package.cloudshell.cp.azure.flows.autoload import AzureAutoloadFlow
 from package.cloudshell.cp.azure.flows.delete_instance import AzureDeleteInstanceFlow
 from package.cloudshell.cp.azure.flows.prepare_sandbox_infra import AzurePrepareSandboxInfraFlow
 from package.cloudshell.cp.azure.reservation_info import AzureReservationInfo
 from package.cloudshell.cp.azure.resource_config import AzureResourceConfig
-from package.cloudshell.cp.azure.deploy_app_models import AzureVMFromMarketplaceDeployApp, AzureVMFromCustomImageDeployApp
+from package.cloudshell.cp.azure.models.deploy_app import AzureVMFromMarketplaceDeployApp, AzureVMFromCustomImageDeployApp
+from package.cloudshell.cp.azure.models.deployed_app import AzureVMFromMarketplaceDeployedApp, \
+    AzureVMFromCustomImageDeployedApp
 from package.cloudshell.cp.azure.flows.access_key import AzureGetAccessKeyFlow
 from package.cloudshell.cp.azure.flows.application_ports import AzureGetApplicationPortsFlow
 from package.cloudshell.cp.azure.flows.available_ip import AzureGetAvailablePrivateIPFlow
@@ -25,7 +28,7 @@ from package.cloudshell.cp.azure.flows.cleanup import AzureCleanupSandboxInfraFl
 
 
 class AzureDriver(ResourceDriverInterface):
-    SHELL_NAME = "Microsoft Azure 2G"
+    SHELL_NAME = constants.SHELL_NAME
 
     def __init__(self):
         """
@@ -193,14 +196,14 @@ class AzureDriver(ResourceDriverInterface):
                                           logger=logger)
 
             resource = context.remote_endpoints[0]
-            deployed_app = DeployedApp.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMRequestActions.from_remote_resource(resource)
 
             power_mgmt_flow = AzurePowerManagementFlow(resource_config=resource_config,
                                                        azure_client=azure_client,
                                                        reservation_info=reservation_info,
                                                        logger=logger)
 
-            return power_mgmt_flow.power_on(deployed_app=deployed_app)
+            return power_mgmt_flow.power_on(deployed_app=deployed_vm_actions.deployed_app)
 
     def PowerOff(self, context, ports):
         """Called during sandbox's teardown can also be run manually by the sandbox end-user from the deployed
@@ -226,14 +229,14 @@ class AzureDriver(ResourceDriverInterface):
                                           logger=logger)
 
             resource = context.remote_endpoints[0]
-            deployed_app = DeployedApp.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMRequestActions.from_remote_resource(resource)
 
             power_mgmt_flow = AzurePowerManagementFlow(resource_config=resource_config,
                                                        azure_client=azure_client,
                                                        reservation_info=reservation_info,
                                                        logger=logger)
 
-            return power_mgmt_flow.power_off(deployed_app=deployed_app)
+            return power_mgmt_flow.power_off(deployed_app=deployed_vm_actions.deployed_app)
 
     def PowerCycle(self, context, ports, delay):
         pass
@@ -266,7 +269,7 @@ class AzureDriver(ResourceDriverInterface):
                                           logger=logger)
 
             resource = context.remote_endpoints[0]
-            deployed_app = DeployedApp.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMRequestActions.from_remote_resource(resource)
 
             refresh_ip_flow = AzureRefreshIPFlow(resource_config=resource_config,
                                                  azure_client=azure_client,
@@ -275,7 +278,7 @@ class AzureDriver(ResourceDriverInterface):
                                                  cancellation_manager=cancellation_manager,
                                                  logger=logger)
 
-            return refresh_ip_flow.refresh_ip(deployed_app=deployed_app)
+            return refresh_ip_flow.refresh_ip(deployed_app=deployed_vm_actions.deployed_app)
 
     def GetVmDetails(self, context, requests, cancellation_context):
         """Called when reserving a sandbox during setup, a call for each app in the sandbox can also be run manually
@@ -295,6 +298,9 @@ class AzureDriver(ResourceDriverInterface):
             resource_config = AzureResourceConfig.from_context(shell_name=self.SHELL_NAME,
                                                                context=context,
                                                                api=api)
+
+            for deploy_app_cls in (AzureVMFromMarketplaceDeployedApp, AzureVMFromCustomImageDeployedApp):
+                GetVMDetailsRequestActions.register_deployment_path(deploy_app_cls)
 
             request_actions = GetVMDetailsRequestActions.from_request(requests)
             cancellation_manager = CancellationContextManager(cancellation_context)
@@ -338,7 +344,7 @@ class AzureDriver(ResourceDriverInterface):
                                           logger=logger)
 
             resource = context.remote_endpoints[0]
-            deployed_app = DeployedApp.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMRequestActions.from_remote_resource(resource)
 
             delete_flow = AzureDeleteInstanceFlow(resource_config=resource_config,
                                                   azure_client=azure_client,
@@ -346,7 +352,7 @@ class AzureDriver(ResourceDriverInterface):
                                                   cs_ip_pool_manager=cs_ip_pool_manager,
                                                   logger=logger)
 
-            delete_flow.delete_instance(deployed_app=deployed_app)
+            delete_flow.delete_instance(deployed_app=deployed_vm_actions.deployed_app)
 
     def CleanupSandboxInfra(self, context, request):
         """Called at the end of reservation teardown
@@ -466,14 +472,14 @@ class AzureDriver(ResourceDriverInterface):
                                           logger=logger)
 
             resource = context.remote_endpoints[0]
-            deployed_app = DeployedApp.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMRequestActions.from_remote_resource(resource)
 
             application_ports_flow = AzureGetApplicationPortsFlow(resource_config=resource_config,
                                                                   azure_client=azure_client,
                                                                   reservation_info=reservation_info,
                                                                   logger=logger)
 
-            return application_ports_flow.get_application_ports(deployed_app=deployed_app)
+            return application_ports_flow.get_application_ports(deployed_app=deployed_vm_actions.deployed_app)
 
     def GetAccessKey(self, context, ports):
         """
