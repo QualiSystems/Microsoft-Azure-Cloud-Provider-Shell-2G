@@ -11,6 +11,7 @@ from package.cloudshell.cp.azure.actions.vm_extension import VMExtensionActions
 from package.cloudshell.cp.azure.exceptions import AzureTaskTimeoutException
 from package.cloudshell.cp.azure.flows.deploy_vm import commands
 from package.cloudshell.cp.azure.utils import name_generator
+from package.cloudshell.cp.azure.utils.nsg_rules_priority_generator import NSGRulesPriorityGenerator
 from package.cloudshell.cp.azure.utils.rollback import RollbackCommandsManager
 from package.cloudshell.cp.azure.utils.cs_reservation_output import CloudShellReservationOutput
 from package.cloudshell.cp.azure.utils.tags import AzureTagsManager
@@ -106,19 +107,21 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
             tags=tags,
         ).execute()
 
-    def _create_vm_nsg_inbound_ports_rules(self, deploy_app, vm_name, vm_nsg, resource_group_name):
+    def _create_vm_nsg_inbound_ports_rules(self, deploy_app, vm_name, vm_nsg, resource_group_name,
+                                           rules_priority_generator):
         """
 
         :param deploy_app:
         :param vm_name:
         :param vm_nsg:
         :param resource_group_name:
+        :param rules_priority_generator:
         :return:
         """
         nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
 
         for inbound_port in deploy_app.inbound_ports:
-            commands.CreateAllowInboundPortRuleCommand(
+            commands.CreateAllowVMInboundPortRuleCommand(
                 rollback_manager=self._rollback_manager,
                 cancellation_manager=self._cancellation_manager,
                 nsg_actions=nsg_actions,
@@ -126,13 +129,16 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                 vm_name=vm_name,
                 inbound_port=inbound_port,
                 resource_group_name=resource_group_name,
+                rules_priority_generator=rules_priority_generator,
             ).execute()
 
-    def _create_vm_nsg_additional_mgmt_networks_rules(self, vm_name, vm_nsg, resource_group_name):
+    def _create_vm_nsg_additional_mgmt_networks_rules(self, vm_name, vm_nsg, resource_group_name,
+                                                      rules_priority_generator):
         """
 
         :param vm_nsg:
         :param resource_group_name:
+        :param rules_priority_generator:
         :return:
         """
         nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
@@ -146,13 +152,15 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                 resource_group_name=resource_group_name,
                 vm_name=vm_name,
                 mgmt_network=mgmt_network,
+                rules_priority_generator=rules_priority_generator,
             ).execute()
 
-    def _create_vm_nsg_mgmt_vnet_rule(self, vm_nsg, resource_group_name):
+    def _create_vm_nsg_mgmt_vnet_rule(self, vm_nsg, resource_group_name, rules_priority_generator):
         """
 
         :param vm_nsg:
         :param resource_group_name:
+        :param rules_priority_generator:
         :return:
         """
         nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
@@ -166,14 +174,16 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
             nsg_name=vm_nsg.name,
             resource_group_name=resource_group_name,
             mgmt_resource_group_name=self._resource_config.management_group_name,
+            rules_priority_generator=rules_priority_generator,
         ).execute()
 
-    def _create_vm_nsg_sandbox_traffic_rules(self, deploy_app, vm_nsg, resource_group_name):
+    def _create_vm_nsg_sandbox_traffic_rules(self, deploy_app, vm_nsg, resource_group_name, rules_priority_generator):
         """
 
         :param deploy_app:
         :param vm_nsg:
         :param resource_group_name:
+        :param rules_priority_generator:
         :return:
         """
         if not deploy_app.allow_all_sandbox_traffic:
@@ -185,6 +195,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                 nsg_actions=nsg_actions,
                 nsg_name=vm_nsg.name,
                 resource_group_name=resource_group_name,
+                rules_priority_generator=rules_priority_generator,
             ).execute()
 
             commands.CreateDenySandoxTrafficRuleCommand(
@@ -193,31 +204,82 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                 nsg_actions=nsg_actions,
                 nsg_name=vm_nsg.name,
                 resource_group_name=resource_group_name,
+                rules_priority_generator=rules_priority_generator,
             ).execute()
 
-    def _create_vm_nsg_rules(self, deploy_app, vm_name, vm_nsg, resource_group_name):
+    def _create_sandbox_nsg_inbound_ports_rules(self, deploy_app, vm_name, resource_group_name, vm_interfaces):
+        """
+        
+        :param deploy_app: 
+        :param vm_name: 
+        :param resource_group_name: 
+        :param vm_interfaces: 
+        :return: 
+        """
+        nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
+        nsg_name = self._reservation_info.get_network_security_group_name()
+
+        # todo: with Lock
+        rules_priority_generator = NSGRulesPriorityGenerator(nsg_name=nsg_name,
+                                                             resource_group_name=resource_group_name,
+                                                             include_existing_rules=True,
+                                                             nsg_actions=nsg_actions)
+
+        # todo: check behaviour on the old 1st gen shell !!! when Public IP = False
+        for interface in vm_interfaces:
+            if interface.ip_configurations[0].public_ip_address is not None:
+                private_ip = interface.ip_configurations[0].private_ip_address
+
+                for inbound_port in deploy_app.inbound_ports:
+                    commands.CreateAllowSandboxInboundPortRuleCommand(
+                        rollback_manager=self._rollback_manager,
+                        cancellation_manager=self._cancellation_manager,
+                        nsg_actions=nsg_actions,
+                        nsg_name=nsg_name,
+                        vm_name=vm_name,
+                        private_ip=private_ip,
+                        inbound_port=inbound_port,
+                        resource_group_name=resource_group_name,
+                        rules_priority_generator=rules_priority_generator,
+                    ).execute()
+
+    def _create_vm_nsg_rules(self, deploy_app, vm_name, vm_nsg, resource_group_name, vm_interfaces):
         """
 
         :param deploy_app:
         :param vm_name:
         :param vm_nsg:
         :param resource_group_name:
+        :param vm_interfaces:
         :return:
         """
+        rules_priority_generator = NSGRulesPriorityGenerator(nsg_name=vm_nsg.name,
+                                                             resource_group_name=resource_group_name)
+
         self._create_vm_nsg_inbound_ports_rules(deploy_app=deploy_app,
                                                 vm_name=vm_name,
                                                 vm_nsg=vm_nsg,
-                                                resource_group_name=resource_group_name)
+                                                resource_group_name=resource_group_name,
+                                                rules_priority_generator=rules_priority_generator)
 
         self._create_vm_nsg_additional_mgmt_networks_rules(vm_name=vm_name,
                                                            vm_nsg=vm_nsg,
-                                                           resource_group_name=resource_group_name)
+                                                           resource_group_name=resource_group_name,
+                                                           rules_priority_generator=rules_priority_generator)
 
-        self._create_vm_nsg_mgmt_vnet_rule(vm_nsg=vm_nsg, resource_group_name=resource_group_name)
+        self._create_vm_nsg_mgmt_vnet_rule(vm_nsg=vm_nsg,
+                                           resource_group_name=resource_group_name,
+                                           rules_priority_generator=rules_priority_generator)
 
         self._create_vm_nsg_sandbox_traffic_rules(deploy_app=deploy_app,
                                                   vm_nsg=vm_nsg,
-                                                  resource_group_name=resource_group_name)
+                                                  resource_group_name=resource_group_name,
+                                                  rules_priority_generator=rules_priority_generator)
+
+        self._create_sandbox_nsg_inbound_ports_rules(deploy_app=deploy_app,
+                                                     vm_name=vm_name,
+                                                     resource_group_name=resource_group_name,
+                                                     vm_interfaces=vm_interfaces)
 
     def _create_vm_interfaces(self, deploy_app, connect_subnets, network_security_group, resource_group_name, vm_name, tags):
         """
@@ -254,7 +316,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                         resource_group_name=resource_group_name,
                         subnet=subnet,
                         network_security_group=network_security_group,
-                        add_public_ip=all([deploy_app.add_public_ip, subnet.is_public()]),
+                        add_public_ip=all([deploy_app.add_public_ip, connect_subnet.is_public()]),
                         reservation_id=self._reservation_info.reservation_id,
                         enable_ip_forwarding=deploy_app.enable_ip_forwarding,
                         region=self._resource_config.region,
@@ -292,37 +354,6 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         return network_interfaces
 
         # todo: create inbound rules one more time?? (now with private IP)
-
-        # old original code
-        # 3. Create network for vm
-        # data.nics = []
-        # for i, nic_request in enumerate(data.nic_requests):
-        #     logger.info("Creating NIC '{}'".format(nic_request.interface_name))
-        #     ip_name = get_ip_from_interface_name(nic_request.interface_name)
-        #     add_public_ip = deployment_model.add_public_ip and nic_request.is_public
-        #     nic = self.network_service.create_network_for_vm(network_client=network_client,
-        #                                                      group_name=data.group_name,
-        #                                                      interface_name=nic_request.interface_name,
-        #                                                      ip_name=ip_name,
-        #                                                      cloud_provider_model=cloud_provider_model,
-        #                                                      subnet=nic_request.subnet,
-        #                                                      add_public_ip=add_public_ip,
-        #                                                      public_ip_type=deployment_model.public_ip_type,
-        #                                                      tags=data.tags,
-        #                                                      logger=logger,
-        #                                                      network_security_group=vm_nsg,
-        #                                                      reservation_id=data.reservation_id,
-        #                                                      enable_ip_forwarding=data.enable_ip_forwarding,
-        #                                                      cloudshell_session=cloudshell_session)
-        #
-        #     private_ip_address = nic.ip_configurations[0].private_ip_address
-        #
-        #     data.all_private_ip_addresses.append(private_ip_address)
-        #     if i == 0:
-        #         data.primary_private_ip_address = private_ip_address
-        #
-        #     logger.info("NIC private IP is {}".format(data.primary_private_ip_address))
-        #     data.nics.append(nic)
         #
         #     # once we have the NIC ip, we can create a permissive security rule for inbound ports but only to ip
         #     # inbound ports only works on public subnets! private subnets are allowed all traffic from sandbox
@@ -421,17 +452,18 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                                      vm_name=vm_name,
                                      tags=tags)
 
-        self._create_vm_nsg_rules(deploy_app=deploy_app,
-                                  vm_name=vm_name,
-                                  vm_nsg=vm_nsg,
-                                  resource_group_name=resource_group_name)
-
         vm_ifaces = self._create_vm_interfaces(deploy_app=deploy_app,
                                                connect_subnets=request_actions.connect_subnets,
                                                network_security_group=vm_nsg,
                                                resource_group_name=resource_group_name,
                                                vm_name=vm_name,
                                                tags=tags)
+
+        self._create_vm_nsg_rules(deploy_app=deploy_app,
+                                  vm_name=vm_name,
+                                  vm_nsg=vm_nsg,
+                                  resource_group_name=resource_group_name,
+                                  vm_interfaces=vm_ifaces)
 
         vm = self._prepare_vm(deploy_app=deploy_app,
                               image_os=image_os,
