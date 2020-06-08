@@ -433,47 +433,47 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         self._validate_deploy_app_request(deploy_app=deploy_app,
                                           connect_subnets=request_actions.connect_subnets,
                                           image_os=image_os)
-
-        vm_nsg = self._create_vm_nsg(resource_group_name=resource_group_name,
-                                     vm_name=vm_name,
-                                     tags=tags)
-
-        vm_ifaces = self._create_vm_interfaces(deploy_app=deploy_app,
-                                               connect_subnets=request_actions.connect_subnets,
-                                               network_security_group=vm_nsg,
-                                               resource_group_name=resource_group_name,
-                                               vm_name=vm_name,
-                                               tags=tags)
-
-        self._create_vm_nsg_rules(deploy_app=deploy_app,
-                                  vm_name=vm_name,
-                                  vm_nsg=vm_nsg,
-                                  resource_group_name=resource_group_name,
-                                  vm_interfaces=vm_ifaces)
-
-        vm = self._prepare_vm(deploy_app=deploy_app,
-                              image_os=image_os,
-                              resource_group_name=resource_group_name,
-                              storage_account_name=storage_account_name,
-                              vm_network_interfaces=vm_ifaces,
-                              computer_name=computer_name,
-                              tags=tags)
-
-        deployed_vm = self._create_vm(vm_name=vm_name,
-                                      virtual_machine=vm,
-                                      resource_group_name=resource_group_name)
-
-        self._create_vm_script_extension(deploy_app=deploy_app,
-                                         image_os_type=image_os,
-                                         resource_group_name=resource_group_name,
+        with self._rollback_manager:
+            vm_nsg = self._create_vm_nsg(resource_group_name=resource_group_name,
                                          vm_name=vm_name,
                                          tags=tags)
 
-        return self._prepare_deploy_app_result(deployed_vm=deployed_vm,
-                                               deploy_app=deploy_app,
-                                               vm_interfaces=vm_ifaces,
-                                               vm_name=vm_name,
-                                               resource_group_name=resource_group_name)
+            vm_ifaces = self._create_vm_interfaces(deploy_app=deploy_app,
+                                                   connect_subnets=request_actions.connect_subnets,
+                                                   network_security_group=vm_nsg,
+                                                   resource_group_name=resource_group_name,
+                                                   vm_name=vm_name,
+                                                   tags=tags)
+
+            self._create_vm_nsg_rules(deploy_app=deploy_app,
+                                      vm_name=vm_name,
+                                      vm_nsg=vm_nsg,
+                                      resource_group_name=resource_group_name,
+                                      vm_interfaces=vm_ifaces)
+
+            vm = self._prepare_vm(deploy_app=deploy_app,
+                                  image_os=image_os,
+                                  resource_group_name=resource_group_name,
+                                  storage_account_name=storage_account_name,
+                                  vm_network_interfaces=vm_ifaces,
+                                  computer_name=computer_name,
+                                  tags=tags)
+
+            deployed_vm = self._create_vm(vm_name=vm_name,
+                                          virtual_machine=vm,
+                                          resource_group_name=resource_group_name)
+
+            self._create_vm_script_extension(deploy_app=deploy_app,
+                                             image_os_type=image_os,
+                                             resource_group_name=resource_group_name,
+                                             vm_name=vm_name,
+                                             tags=tags)
+
+            return self._prepare_deploy_app_result(deployed_vm=deployed_vm,
+                                                   deploy_app=deploy_app,
+                                                   vm_interfaces=vm_ifaces,
+                                                   vm_name=vm_name,
+                                                   resource_group_name=resource_group_name)
 
     def _create_vm_script_extension(self, deploy_app, image_os_type, resource_group_name, vm_name, tags):
         """

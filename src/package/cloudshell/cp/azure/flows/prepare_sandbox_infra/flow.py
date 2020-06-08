@@ -42,9 +42,10 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
         resource_group_name = self._reservation_info.get_resource_group_name()
         resource_group_actions = ResourceGroupActions(azure_client=self._azure_client, logger=self._logger)
 
-        self._create_resource_group(resource_group_actions=resource_group_actions,
-                                    resource_group_name=resource_group_name,
-                                    tags=tags)
+        with self._rollback_manager:
+            self._create_resource_group(resource_group_actions=resource_group_actions,
+                                        resource_group_name=resource_group_name,
+                                        tags=tags)
 
     def prepare_subnets(self, request_actions):
         """
@@ -56,17 +57,18 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
         nsg_name = self._reservation_info.get_network_security_group_name()
         tags = self._tags_manager.get_tags()
 
-        nsg = self._create_nsg(nsg_name=nsg_name,
-                               resource_group_name=resource_group_name,
-                               tags=tags)
+        with self._rollback_manager:
+            nsg = self._create_nsg(nsg_name=nsg_name,
+                                   resource_group_name=resource_group_name,
+                                   tags=tags)
 
-        self._create_nsg_rules(request_actions=request_actions,
-                               resource_group_name=resource_group_name,
-                               nsg_name=nsg_name)
+            self._create_nsg_rules(request_actions=request_actions,
+                                   resource_group_name=resource_group_name,
+                                   nsg_name=nsg_name)
 
-        return self._create_subnets(request_actions=request_actions,
-                                    resource_group_name=resource_group_name,
-                                    network_security_group=nsg)
+            return self._create_subnets(request_actions=request_actions,
+                                        resource_group_name=resource_group_name,
+                                        network_security_group=nsg)
 
     def create_ssh_keys(self, request_actions):
         """
@@ -79,23 +81,24 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
         storage_account_name = self._reservation_info.get_storage_account_name()
         tags = self._tags_manager.get_tags()
 
-        self._create_storage_account_command(storage_account_name=storage_account_name,
-                                             resource_group_name=resource_group_name,
-                                             tags=tags)
+        with self._rollback_manager:
+            self._create_storage_account_command(storage_account_name=storage_account_name,
+                                                 resource_group_name=resource_group_name,
+                                                 tags=tags)
 
-        ssh_actions = SSHKeyPairActions(azure_client=self._azure_client, logger=self._logger)
+            ssh_actions = SSHKeyPairActions(azure_client=self._azure_client, logger=self._logger)
 
-        private_key, public_key = ssh_actions.create_ssh_key_pair()
+            private_key, public_key = ssh_actions.create_ssh_key_pair()
 
-        self._create_ssh_public_key(public_key=public_key,
-                                    storage_account_name=storage_account_name,
-                                    resource_group_name=resource_group_name)
+            self._create_ssh_public_key(public_key=public_key,
+                                        storage_account_name=storage_account_name,
+                                        resource_group_name=resource_group_name)
 
-        self._create_ssh_private_key(private_key=private_key,
-                                     storage_account_name=storage_account_name,
-                                     resource_group_name=resource_group_name)
+            self._create_ssh_private_key(private_key=private_key,
+                                         storage_account_name=storage_account_name,
+                                         resource_group_name=resource_group_name)
 
-        return private_key
+            return private_key
 
     def _create_resource_group(self, resource_group_actions, resource_group_name, tags):
         """
