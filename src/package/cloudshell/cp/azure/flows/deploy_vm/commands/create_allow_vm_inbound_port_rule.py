@@ -3,21 +3,23 @@ import re
 from package.cloudshell.cp.azure.utils.rollback import RollbackCommand
 
 
-class CreateAllowInboundPortRuleCommand(RollbackCommand):
-    """Open traffic to VM on inbound ports (an attribute on the App)"""
+class CreateAllowVMInboundPortRuleCommand(RollbackCommand):
+    """Open traffic to VM on inbound ports (an attribute on the App) on the VM NSG"""
     NSG_RULE_PRIORITY = 1000
     NSG_RULE_NAME_TPL = "{vm_name}_inbound_port:{port_range}:{protocol}"
 
     def __init__(self, rollback_manager, cancellation_manager, nsg_actions, nsg_name, vm_name, inbound_port,
-                 resource_group_name):
+                 resource_group_name, rules_priority_generator):
         """
 
         :param rollback_manager:
         :param cancellation_manager:
         :param nsg_actions:
+        :param nsg_name:
+        :param vm_name:
         :param inbound_port:
         :param resource_group_name:
-        :param nsg_name:
+        :param rules_priority_generator:
         """
         super().__init__(rollback_manager=rollback_manager, cancellation_manager=cancellation_manager)
         self._nsg_actions = nsg_actions
@@ -25,9 +27,11 @@ class CreateAllowInboundPortRuleCommand(RollbackCommand):
         self._vm_name = vm_name
         self._inbound_port = inbound_port
         self._resource_group_name = resource_group_name
+        self._rules_priority_generator = rules_priority_generator
         self._port_range, self._protocol = self._parse_port_range(self._inbound_port)
 
     def _execute(self):
+        # dst_address = RouteNextHopType.internet
         self._nsg_actions.create_nsg_allow_rule(
             rule_name=self.NSG_RULE_NAME_TPL.format(vm_name=self._vm_name,
                                                     port_range=self._port_range,
@@ -36,7 +40,7 @@ class CreateAllowInboundPortRuleCommand(RollbackCommand):
             nsg_name=self._nsg_name,
             dst_port_range=self._port_range,
             protocol=self._protocol,
-            start_from=self.NSG_RULE_PRIORITY)
+            rule_priority=self._rules_priority_generator.get_priority(start_from=self.NSG_RULE_PRIORITY))
 
     def _parse_port_range(self, port_data):
         # todo: refactor this method !!!

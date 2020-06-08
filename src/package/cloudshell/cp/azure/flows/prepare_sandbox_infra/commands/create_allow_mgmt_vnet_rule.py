@@ -10,7 +10,7 @@ class CreateAllowMGMTVnetRuleCommand(RollbackCommand):
     NSG_RULE_NAME_TPL = "Allow_{mgmt_vnet_cidr}_To_{sandbox_cidr}"
 
     def __init__(self, rollback_manager, cancellation_manager, network_actions, nsg_actions, mgmt_resource_group_name,
-                 resource_group_name, nsg_name, sandbox_cidr):
+                 resource_group_name, nsg_name, sandbox_cidr, rules_priority_generator):
         """
 
         :param rollback_manager:
@@ -21,6 +21,7 @@ class CreateAllowMGMTVnetRuleCommand(RollbackCommand):
         :param resource_group_name:
         :param nsg_name:
         :param sandbox_cidr:
+        :param rules_priority_generator:
         """
         super().__init__(rollback_manager=rollback_manager, cancellation_manager=cancellation_manager)
         self._nsg_actions = nsg_actions
@@ -29,6 +30,7 @@ class CreateAllowMGMTVnetRuleCommand(RollbackCommand):
         self._resource_group_name = resource_group_name
         self._nsg_name = nsg_name
         self._sandbox_cidr = sandbox_cidr
+        self._rules_priority_generator = rules_priority_generator
 
     def execute(self):
         with self._cancellation_manager:
@@ -45,7 +47,7 @@ class CreateAllowMGMTVnetRuleCommand(RollbackCommand):
                 nsg_name=self._nsg_name,
                 src_address=mgmt_vnet_cidr,
                 dst_address=self._sandbox_cidr,
-                start_from=self.NSG_RULE_PRIORITY)
+                rule_priority=self._rules_priority_generator.get_priority(start_from=self.NSG_RULE_PRIORITY))
 
     def rollback(self):
         mgmt_vnet = self._network_actions.get_mgmt_virtual_network(
