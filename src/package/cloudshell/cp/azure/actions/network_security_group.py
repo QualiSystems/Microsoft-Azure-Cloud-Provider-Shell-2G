@@ -1,8 +1,6 @@
 from azure.mgmt.network.models import RouteNextHopType, SecurityRuleProtocol, SecurityRuleAccess
 from azure.mgmt.network.models import SecurityRule
 
-from package.cloudshell.cp.azure.actions.nsg_rules_priority_generator import NSGRulesPriorityGenerator
-
 
 class NetworkSecurityGroupActions:
     VM_NSG_NAME_TPL = "NSG_{vm_name}"
