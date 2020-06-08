@@ -11,17 +11,19 @@ from msrestazure.azure_exceptions import CloudError
 
 
 class AzureCleanupSandboxInfraFlow(AbstractCleanupSandboxInfraFlow):
-    def __init__(self, resource_config, azure_client, reservation_info, logger):
+    def __init__(self, resource_config, azure_client, reservation_info, lock_manager, logger):
         """
 
         :param resource_config:
         :param azure_client:
         :param reservation_info:
+        :param lock_manager:
         :param logging.Logger logger:
         """
         self._resource_config = resource_config
         self._azure_client = azure_client
         self._reservation_info = reservation_info
+        self._lock_manager = lock_manager
         self._logger = logger
 
     def _find_sandbox_subnets(self, resource_group_name, sandbox_vnet):
@@ -57,6 +59,8 @@ class AzureCleanupSandboxInfraFlow(AbstractCleanupSandboxInfraFlow):
         resource_group_actions = ResourceGroupActions(azure_client=self._azure_client, logger=self._logger)
         nsg_actions = NetworkSecurityGroupActions(azure_client=self._azure_client, logger=self._logger)
         storage_actions = StorageAccountActions(azure_client=self._azure_client, logger=self._logger)
+
+        self._lock_manager.remove_lock(nsg_name)
 
         sandbox_vnet = network_actions.get_sandbox_virtual_network(
             resource_group_name=self._resource_config.management_group_name)
