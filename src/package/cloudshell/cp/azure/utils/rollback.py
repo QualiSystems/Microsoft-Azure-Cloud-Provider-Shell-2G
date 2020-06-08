@@ -45,8 +45,7 @@ class RollbackCommand:
         raise NotImplementedError(f"Class {type(self)} must implement method 'rollback'")
 
     def execute(self):
-        with self._rollback_manager:
-            with self._cancellation_manager:
-                command_result = self._execute()
-                self.executed = True
-                return command_result
+        with self._cancellation_manager:
+            command_result = self._execute()
+            self.executed = True
+            return command_result
