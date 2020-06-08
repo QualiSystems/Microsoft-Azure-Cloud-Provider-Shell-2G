@@ -6,6 +6,7 @@ from package.cloudshell.cp.azure.actions.ssh_key_pair import SSHKeyPairActions
 from package.cloudshell.cp.azure.actions.network_security_group import NetworkSecurityGroupActions
 from package.cloudshell.cp.azure.actions.network import NetworkActions
 from package.cloudshell.cp.azure.flows.prepare_sandbox_infra import commands
+from package.cloudshell.cp.azure.utils.nsg_rules_priority_generator import NSGRulesPriorityGenerator
 from package.cloudshell.cp.azure.utils.rollback import RollbackCommandsManager
 from package.cloudshell.cp.azure.utils.tags import AzureTagsManager
 
@@ -133,7 +134,8 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
             tags=tags,
         ).execute()
 
-    def _create_nsg_allow_sandbox_traffic_to_subnet_rules(self, request_actions, nsg_name, resource_group_name):
+    def _create_nsg_allow_sandbox_traffic_to_subnet_rules(self, request_actions, nsg_name, resource_group_name,
+                                                          rules_priority_generator):
         """
 
         :param request_actions:
@@ -152,9 +154,11 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
                 resource_group_name=resource_group_name,
                 sandbox_cidr=request_actions.sandbox_cidr,
                 subnet_cidr=action.get_cidr(),
+                rules_priority_generator=rules_priority_generator,
             ).execute()
 
-    def _create_nsg_deny_access_to_private_subnet_rules(self, request_actions, nsg_name, resource_group_name):
+    def _create_nsg_deny_access_to_private_subnet_rules(self, request_actions, nsg_name, resource_group_name,
+                                                        rules_priority_generator):
         """
 
         :param request_actions:
@@ -173,9 +177,11 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
                 resource_group_name=resource_group_name,
                 sandbox_cidr=request_actions.sandbox_cidr,
                 subnet_cidr=action.get_cidr(),
+                rules_priority_generator=rules_priority_generator,
             ).execute()
 
-    def _create_nsg_additional_mgmt_networks_rules(self, request_actions, nsg_name, resource_group_name):
+    def _create_nsg_additional_mgmt_networks_rules(self, request_actions, nsg_name, resource_group_name,
+                                                   rules_priority_generator):
         """
 
         :param request_actions:
@@ -194,9 +200,11 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
                 resource_group_name=resource_group_name,
                 mgmt_network=mgmt_network,
                 sandbox_cidr=request_actions.sandbox_cidr,
+                rules_priority_generator=rules_priority_generator,
             ).execute()
 
-    def _create_nsg_allow_mgmt_vnet_rule(self, request_actions, nsg_name, resource_group_name):
+    def _create_nsg_allow_mgmt_vnet_rule(self, request_actions, nsg_name, resource_group_name,
+                                         rules_priority_generator):
         """
 
         :param request_actions:
@@ -216,9 +224,11 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
             nsg_actions=nsg_actions,
             nsg_name=nsg_name,
             sandbox_cidr=request_actions.sandbox_cidr,
+            rules_priority_generator=rules_priority_generator,
         ).execute()
 
-    def _create_nsg_deny_traffic_from_other_sandboxes_rule(self, request_actions, nsg_name, resource_group_name):
+    def _create_nsg_deny_traffic_from_other_sandboxes_rule(self, request_actions, nsg_name, resource_group_name,
+                                                           rules_priority_generator):
         """
 
         :param request_actions:
@@ -238,6 +248,7 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
             nsg_actions=nsg_actions,
             sandbox_cidr=request_actions.sandbox_cidr,
             nsg_name=nsg_name,
+            rules_priority_generator=rules_priority_generator,
         ).execute()
 
     def _create_nsg_rules(self, request_actions, resource_group_name, nsg_name):
@@ -248,25 +259,32 @@ class AzurePrepareSandboxInfraFlow(AbstractPrepareSandboxInfraFlow):
         :param nsg_name:
         :return:
         """
+        rules_priority_generator = NSGRulesPriorityGenerator(nsg_name=nsg_name, resource_group_name=resource_group_name)
+
         self._create_nsg_allow_sandbox_traffic_to_subnet_rules(request_actions=request_actions,
                                                                nsg_name=nsg_name,
-                                                               resource_group_name=resource_group_name)
+                                                               resource_group_name=resource_group_name,
+                                                               rules_priority_generator=rules_priority_generator)
 
         self._create_nsg_deny_access_to_private_subnet_rules(request_actions=request_actions,
                                                              nsg_name=nsg_name,
-                                                             resource_group_name=resource_group_name)
+                                                             resource_group_name=resource_group_name,
+                                                             rules_priority_generator=rules_priority_generator)
 
         self._create_nsg_additional_mgmt_networks_rules(request_actions=request_actions,
                                                         nsg_name=nsg_name,
-                                                        resource_group_name=resource_group_name)
+                                                        resource_group_name=resource_group_name,
+                                                        rules_priority_generator=rules_priority_generator)
 
         self._create_nsg_allow_mgmt_vnet_rule(request_actions=request_actions,
                                               nsg_name=nsg_name,
-                                              resource_group_name=resource_group_name)
+                                              resource_group_name=resource_group_name,
+                                              rules_priority_generator=rules_priority_generator)
 
         self._create_nsg_deny_traffic_from_other_sandboxes_rule(request_actions=request_actions,
                                                                 nsg_name=nsg_name,
-                                                                resource_group_name=resource_group_name)
+                                                                resource_group_name=resource_group_name,
+                                                                rules_priority_generator=rules_priority_generator)
 
     def _create_subnets(self, request_actions, resource_group_name, network_security_group):
         """Create additional subnets requested by server

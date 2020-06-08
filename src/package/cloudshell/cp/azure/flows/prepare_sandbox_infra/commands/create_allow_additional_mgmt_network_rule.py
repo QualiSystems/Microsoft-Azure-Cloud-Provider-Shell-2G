@@ -11,7 +11,7 @@ class CreateAdditionalMGMTNetworkRuleCommand(RollbackCommand):
     NSG_RULE_NAME_TPL = "Allow_{mgmt_network}_To_{sandbox_cidr}"
 
     def __init__(self, rollback_manager, cancellation_manager, nsg_actions, nsg_name, resource_group_name,
-                 mgmt_network, sandbox_cidr):
+                 mgmt_network, sandbox_cidr, rules_priority_generator):
         """
 
         :param rollback_manager:
@@ -21,6 +21,7 @@ class CreateAdditionalMGMTNetworkRuleCommand(RollbackCommand):
         :param resource_group_name:
         :param mgmt_network:
         :param sandbox_cidr:
+        :param rules_priority_generator:
         """
         super().__init__(rollback_manager=rollback_manager, cancellation_manager=cancellation_manager)
         self._nsg_actions = nsg_actions
@@ -28,6 +29,7 @@ class CreateAdditionalMGMTNetworkRuleCommand(RollbackCommand):
         self._resource_group_name = resource_group_name
         self._mgmt_network = mgmt_network
         self._sandbox_cidr = sandbox_cidr
+        self._rules_priority_generator = rules_priority_generator
 
     def _execute(self):
         self._nsg_actions.create_nsg_allow_rule(
@@ -37,7 +39,7 @@ class CreateAdditionalMGMTNetworkRuleCommand(RollbackCommand):
             nsg_name=self._nsg_name,
             src_address=self._mgmt_network,
             dst_address=self._sandbox_cidr,
-            start_from=self.NSG_RULE_PRIORITY)
+            rule_priority=self._rules_priority_generator.get_priority(start_from=self.NSG_RULE_PRIORITY))
 
     def rollback(self):
         self._nsg_actions.delete_nsg_rule(
