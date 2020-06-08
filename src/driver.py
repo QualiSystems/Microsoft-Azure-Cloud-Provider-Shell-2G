@@ -20,11 +20,12 @@ from package.cloudshell.cp.azure.flows.application_ports import AzureGetApplicat
 from package.cloudshell.cp.azure.flows.available_ip import AzureGetAvailablePrivateIPFlow
 from package.cloudshell.cp.azure.flows.deploy_vm.deploy_custom_vm import AzureDeployCustomVMFlow
 from package.cloudshell.cp.azure.flows.deploy_vm.deploy_marketplace_vm import AzureDeployMarketplaceVMFlow
-from package.cloudshell.cp.azure.utils.cs_ip_pool_manager import CSIPPoolManager
 from package.cloudshell.cp.azure.flows.power_mgmt import AzurePowerManagementFlow
 from package.cloudshell.cp.azure.flows.vm_details import AzureGetVMDetailsFlow
 from package.cloudshell.cp.azure.flows.refresh_ip import AzureRefreshIPFlow
 from package.cloudshell.cp.azure.flows.cleanup import AzureCleanupSandboxInfraFlow
+from package.cloudshell.cp.azure.utils.cs_ip_pool_manager import CSIPPoolManager
+from package.cloudshell.cp.azure.utils.lock_manager import ThreadLockManager
 
 
 class AzureDriver(ResourceDriverInterface):
@@ -34,7 +35,7 @@ class AzureDriver(ResourceDriverInterface):
         """
         ctor must be without arguments, it is created with reflection at run time
         """
-        pass
+        self.lock_manager = ThreadLockManager()
 
     def initialize(self, context):
         """Called every time a new instance of the driver is created
@@ -168,6 +169,7 @@ class AzureDriver(ResourceDriverInterface):
                                             reservation_info=reservation_info,
                                             cancellation_manager=cancellation_manager,
                                             cs_ip_pool_manager=cs_ip_pool_manager,
+                                            lock_manager=self.lock_manager,
                                             logger=logger)
 
             return deploy_flow.deploy(request_actions=request_actions)
@@ -385,6 +387,7 @@ class AzureDriver(ResourceDriverInterface):
             cleanup_flow = AzureCleanupSandboxInfraFlow(resource_config=resource_config,
                                                         azure_client=azure_client,
                                                         reservation_info=reservation_info,
+                                                        lock_manager=self.lock_manager,
                                                         logger=logger)
 
             return cleanup_flow.cleanup(request_actions=request_actions)
