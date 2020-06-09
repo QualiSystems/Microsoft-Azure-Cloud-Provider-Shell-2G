@@ -11,6 +11,7 @@ from package.cloudshell.cp.azure.actions.vm_extension import VMExtensionActions
 from package.cloudshell.cp.azure.exceptions import AzureTaskTimeoutException
 from package.cloudshell.cp.azure.flows.deploy_vm import commands
 from package.cloudshell.cp.azure.utils import name_generator
+from package.cloudshell.cp.azure.utils.azure_task_waiter import AzureTaskWaiter
 from package.cloudshell.cp.azure.utils.nsg_rules_priority_generator import NSGRulesPriorityGenerator
 from package.cloudshell.cp.azure.utils.rollback import RollbackCommandsManager
 from package.cloudshell.cp.azure.utils.cs_reservation_output import CloudShellReservationOutput
@@ -40,6 +41,10 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         self._cs_ip_pool_manager = cs_ip_pool_manager
         self._rollback_manager = RollbackCommandsManager(logger=self._logger)
         self._tags_manager = AzureTagsManager(reservation_info=self._reservation_info)
+
+        self._task_waiter_manager = AzureTaskWaiter(cancellation_manager=self._cancellation_manager,
+                                                    logger=self._logger)
+
         self._cs_reservation_output = CloudShellReservationOutput(cs_api=self._cs_api,
                                                                   reservation_id=self._reservation_info.reservation_id,
                                                                   logger=self._logger)
@@ -226,7 +231,6 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                                                                  include_existing_rules=True,
                                                                  nsg_actions=nsg_actions)
 
-            # todo: check behaviour on the old 1st gen shell !!! when Public IP = False
             for interface in vm_interfaces:
                 if interface.ip_configurations[0].public_ip_address is not None:
                     private_ip = interface.ip_configurations[0].private_ip_address
@@ -300,31 +304,28 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
 
         if connect_subnets:
             for idx, connect_subnet in enumerate(connect_subnets):
-                subnet = next((subnet for subnet in sandbox_subnets if subnet.name == connect_subnet.subnet_id),
-                              None)
+                subnet = self._find_sandbox_subnet(subnet_name=connect_subnet.subnet_id,
+                                                   sandbox_subnets=sandbox_subnets)
 
-                # todo: should we raise some Exception if we are unable to find correct Subnet ?
-                self._logger.warning(f"Unable to find subnet with subnet ID: {connect_subnet.subnet_id}")
-                if subnet:
-                    interface = commands.CreateVMNetworkCommand(
-                        rollback_manager=self._rollback_manager,
-                        cancellation_manager=self._cancellation_manager,
-                        network_actions=network_actions,
-                        interface_name=f"{vm_name}_{idx}",
-                        public_ip_type=deploy_app.public_ip_type,
-                        private_ip_allocation_method=self._resource_config.private_ip_allocation_method,
-                        cs_ip_pool_manager=self._cs_ip_pool_manager,
-                        resource_group_name=resource_group_name,
-                        subnet=subnet,
-                        network_security_group=network_security_group,
-                        add_public_ip=all([deploy_app.add_public_ip, connect_subnet.is_public()]),
-                        reservation_id=self._reservation_info.reservation_id,
-                        enable_ip_forwarding=deploy_app.enable_ip_forwarding,
-                        region=self._resource_config.region,
-                        tags=tags,
-                    ).execute()
+                interface = commands.CreateVMNetworkCommand(
+                    rollback_manager=self._rollback_manager,
+                    cancellation_manager=self._cancellation_manager,
+                    network_actions=network_actions,
+                    interface_name=f"{vm_name}_{idx}",
+                    public_ip_type=deploy_app.public_ip_type,
+                    private_ip_allocation_method=self._resource_config.private_ip_allocation_method,
+                    cs_ip_pool_manager=self._cs_ip_pool_manager,
+                    resource_group_name=resource_group_name,
+                    subnet=subnet,
+                    network_security_group=network_security_group,
+                    add_public_ip=all([deploy_app.add_public_ip, connect_subnet.is_public()]),
+                    reservation_id=self._reservation_info.reservation_id,
+                    enable_ip_forwarding=deploy_app.enable_ip_forwarding,
+                    region=self._resource_config.region,
+                    tags=tags,
+                ).execute()
 
-                    network_interfaces.append(interface)
+                network_interfaces.append(interface)
 
         else:
             for idx, subnet in enumerate(sandbox_subnets):
@@ -378,6 +379,19 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         for vm_interface in vm_interfaces:
             if vm_interface.primary:
                 return vm_interface.ip_configurations[0].private_ip_address
+
+    def _find_sandbox_subnet(self, subnet_name, sandbox_subnets):
+        """
+
+        :param subnet_name:
+        :param sandbox_subnets:
+        :return:
+        """
+        for subnet in sandbox_subnets:
+            if subnet.name == subnet_name:
+                return subnet
+
+        raise Exception(f"Unable to find Sandbox Subnet with name '{subnet_name}'")
 
     def _prepare_deploy_app_result(self, deployed_vm, deploy_app, vm_interfaces, vm_name, resource_group_name):
         """
@@ -490,6 +504,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
             create_vm_extension_cmd = commands.CreateVMExtensionCommand(
                 rollback_manager=self._rollback_manager,
                 cancellation_manager=self._cancellation_manager,
+                task_waiter_manager=self._task_waiter_manager,
                 vm_extension_actions=vm_extension_actions,
                 script_file_path=deploy_app.extension_script_file,
                 script_config=deploy_app.extension_script_configurations,
@@ -520,6 +535,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         return commands.CreateVMCommand(
             rollback_manager=self._rollback_manager,
             cancellation_manager=self._cancellation_manager,
+            task_waiter_manager=self._task_waiter_manager,
             vm_actions=vm_actions,
             vm_name=vm_name,
             virtual_machine=virtual_machine,

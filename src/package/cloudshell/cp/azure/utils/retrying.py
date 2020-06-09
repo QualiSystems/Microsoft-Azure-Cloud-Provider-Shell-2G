@@ -17,15 +17,11 @@ def retry_on_connection_error(exception):
     """
     return any([isinstance(exception, ClientRequestError),
                 isinstance(exception, ConnectionError),
-                _is_pool_closed_error(exception)])
+                _is_pool_closed_error()])
 
 
-# todo: refactor this method
-def _is_pool_closed_error(exception):
-    execption_message_list = traceback.format_exception_only(type(exception), exception)
-    execption_message = "".join(execption_message_list)
-
-    return "pool is closed" in execption_message.lower()
+def _is_pool_closed_error():
+    return "pool is closed" in traceback.format_exc()
 
 
 def retry_on_retryable_error(exception):
@@ -34,4 +30,3 @@ def retry_on_retryable_error(exception):
     :param exceptions.Exception exception:
     """
     return isinstance(exception, CloudError) and RETRYABLE_ERROR_STRING in exception.message.lower()
-
