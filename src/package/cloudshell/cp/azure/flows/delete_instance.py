@@ -83,7 +83,7 @@ class AzureDeleteInstanceFlow:
         :return:
         """
         resource_group_name = self._reservation_info.get_resource_group_name()
-        # nsg_name = self._reservation_info.get_network_security_group_name()
+        nsg_name = self._reservation_info.get_network_security_group_name()
 
         vm_actions = VMActions(azure_client=self._azure_client, logger=self._logger)
         network_actions = NetworkActions(azure_client=self._azure_client, logger=self._logger)
@@ -103,7 +103,6 @@ class AzureDeleteInstanceFlow:
         private_ips = self._get_private_ip_names(network_interfaces=network_interfaces,
                                                  network_actions=network_actions)
 
-        # todo: add some manager class that will continue deleting resources in case of some exceptions?!!
         delete_commands = [partial(vm_actions.delete_vm,
                                    vm_name=deployed_app.name,
                                    resource_group_name=resource_group_name)]
@@ -126,6 +125,12 @@ class AzureDeleteInstanceFlow:
                                        vm_name=vm.name,
                                        resource_group_name=resource_group_name))
 
+        for nsg_rule in network_actions.get_nsg_rules(nsg_name=nsg_name, resource_group_name=resource_group_name):
+            delete_commands.append(partial(nsg_actions.delete_nsg_rule,
+                                           rule_name=nsg_rule.name,
+                                           nsg_name=nsg_name,
+                                           resource_group_name=resource_group_name))
+
         for delete_command in delete_commands:
             try:
                 delete_command()
@@ -134,12 +139,6 @@ class AzureDeleteInstanceFlow:
                     self._logger.warning("Unable to find resource on Azure for deleting:", exc_info=True)
                     continue
                 raise
-
-        # 6) delete NSG Rules from the sandbox NSG
-        # sandbox_nsg = nsg_actions.get_network_security_group(nsg_name=nsg_name,
-        #                                                      resource_group_name=resource_group_name)
-        # todo: we can have here strange rules created during deploy inbound ports - need to check do we
-        #  really need these rules
 
         if private_ips:
             try:
