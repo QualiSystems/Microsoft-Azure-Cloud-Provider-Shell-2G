@@ -1,3 +1,4 @@
+import requests
 from azure.mgmt.compute.models import OperatingSystemTypes
 from msrestazure.azure_exceptions import CloudError
 import ipaddress
@@ -141,6 +142,21 @@ class ValidationActions(NetworkActions):
         self._logger.info("Validating Deploy App 'Inbound Ports' attribute")
         if deploy_app.inbound_ports and not deploy_app.add_public_ip:
             raise Exception('"Inbound Ports" attribute must be empty when "Add Public IP" is False')
+
+    def validate_deploy_app_script_file(self, deploy_app):
+        self._logger.info("Validating Deploy App Extension Script File")
+
+        if not deploy_app.extension_script_file:
+            return
+
+        error_msg = f"Unable to retrieve VM Extension Script File: {deploy_app.extension_script_file}"
+
+        try:
+            response = requests.head(deploy_app.extension_script_file, verify=False)
+            response.raise_for_status()
+        except Exception:
+            self._logger.exception(error_msg)
+            raise Exception(error_msg)
 
     def validate_deploy_app_script_extension(self, deploy_app, image_os):
         """

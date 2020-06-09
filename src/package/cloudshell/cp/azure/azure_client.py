@@ -314,7 +314,6 @@ class AzureAPIClient:
         :param str file_name: file name within directory
         :return:
         """
-        # todo: add caching here and in some other client methods !!!!!
         file_service = self._get_file_service(
             resource_group_name=resource_group_name,
             storage_account_name=storage_account_name)
