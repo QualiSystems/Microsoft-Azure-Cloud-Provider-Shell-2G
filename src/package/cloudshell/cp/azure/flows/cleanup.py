@@ -20,11 +20,11 @@ class AzureCleanupSandboxInfraFlow(AbstractCleanupSandboxInfraFlow):
         :param lock_manager:
         :param logging.Logger logger:
         """
+        super().__init__(logger=logger)
         self._resource_config = resource_config
         self._azure_client = azure_client
         self._reservation_info = reservation_info
         self._lock_manager = lock_manager
-        self._logger = logger
 
     def _find_sandbox_subnets(self, resource_group_name, sandbox_vnet):
         """Find the sandbox subnet in the vNet
@@ -34,7 +34,7 @@ class AzureCleanupSandboxInfraFlow(AbstractCleanupSandboxInfraFlow):
         :return:
         :rtype: list[Subnet]
         """
-        # todo: rework this with tags ????
+        # todo: rework this using some special tags ?
         return [subnet for subnet in sandbox_vnet.subnets
                 if subnet.name.startswith(resource_group_name)]
 
@@ -43,13 +43,6 @@ class AzureCleanupSandboxInfraFlow(AbstractCleanupSandboxInfraFlow):
 
         :param request_actions:
         :return:
-        """
-
-        """
-        The order of execution is very important and it should be:
-        1. remove nsg from subnet
-        2. delete resource group
-        3. delete sandbox subnet
         """
         resource_group_name = self._reservation_info.get_resource_group_name()
         nsg_name = self._reservation_info.get_network_security_group_name()
@@ -65,7 +58,6 @@ class AzureCleanupSandboxInfraFlow(AbstractCleanupSandboxInfraFlow):
         sandbox_vnet = network_actions.get_sandbox_virtual_network(
             resource_group_name=self._resource_config.management_group_name)
 
-        # todo: do same as in the delete_instance command !!!
         cleanup_commands = []
         for subnet in self._find_sandbox_subnets(resource_group_name=resource_group_name,
                                                  sandbox_vnet=sandbox_vnet):

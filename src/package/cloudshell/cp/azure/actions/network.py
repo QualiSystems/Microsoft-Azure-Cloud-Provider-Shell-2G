@@ -137,7 +137,6 @@ class NetworkActions:
         :param subnet:
         :return:
         """
-        # todo: check this This call is atomic because we have to sync subnet updating for the entire sandbox vnet
         self._logger.info(f"Updating subnet {subnet_name} under: {resource_group_name}/{vnet_name}...")
         self._azure_client.update_subnet(subnet_name=subnet_name,
                                          vnet_name=vnet_name,
@@ -231,10 +230,10 @@ class NetworkActions:
         if subnet.network_security_group is not None:
             self._logger.info(f"Detaching NSG from subnet {subnet.id}")
             subnet.network_security_group = None
-            self._azure_client.update_subnet(subnet_name=subnet.name,
-                                             vnet_name=vnet.name,
-                                             subnet=subnet,
-                                             resource_group_name=resource_group_name)
+            self.update_subnet(subnet_name=subnet.name,
+                               vnet_name=vnet.name,
+                               subnet=subnet,
+                               resource_group_name=resource_group_name)
 
             self._logger.info(f"NSG from subnet {subnet.id} was successfully detached")
 

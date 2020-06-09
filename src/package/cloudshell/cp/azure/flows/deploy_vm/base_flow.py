@@ -83,11 +83,10 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
         validation_actions.validate_deploy_app_add_public_ip(deploy_app=deploy_app, connect_subnets=connect_subnets)
         validation_actions.validate_deploy_app_inbound_ports(deploy_app=deploy_app)
         validation_actions.validate_deploy_app_disk_size(deploy_app=deploy_app)
+        validation_actions.validate_deploy_app_script_file(deploy_app=deploy_app)
         validation_actions.validate_deploy_app_script_extension(deploy_app=deploy_app, image_os=image_os)
         validation_actions.validate_vm_size(deploy_app_vm_size=deploy_app.vm_size,
                                             cloud_provider_vm_size=self._resource_config.vm_size)
-
-        # todo: validate script file path with the head request !!!
 
     def _create_vm_nsg(self, resource_group_name, vm_name, tags):
         """
