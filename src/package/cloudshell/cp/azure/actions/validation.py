@@ -128,7 +128,8 @@ class ValidationActions(NetworkActions):
         :return:
         """
         self._logger.info("Validating Deploy App 'Add Public IP' attribute")
-        all_subnets_are_private = connect_subnets and all([subnet.is_private() for subnet in connect_subnets])
+        all_subnets_are_private = all([
+            not subnet.is_public() for subnet in connect_subnets]) if connect_subnets else False
 
         if all_subnets_are_private and deploy_app.add_public_ip:
             raise Exception("Cannot deploy App with Public IP when connected only to private subnets")
