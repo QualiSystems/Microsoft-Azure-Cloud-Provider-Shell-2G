@@ -125,7 +125,7 @@ class AzureDeleteInstanceFlow:
                                        vm_name=vm.name,
                                        resource_group_name=resource_group_name))
 
-        for nsg_rule in network_actions.get_nsg_rules(nsg_name=nsg_name, resource_group_name=resource_group_name):
+        for nsg_rule in nsg_actions.get_nsg_rules(nsg_name=nsg_name, resource_group_name=resource_group_name):
             delete_commands.append(partial(nsg_actions.delete_nsg_rule,
                                            rule_name=nsg_rule.name,
                                            nsg_name=nsg_name,
