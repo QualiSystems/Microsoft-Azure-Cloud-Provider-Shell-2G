@@ -473,6 +473,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                                   tags=tags)
 
             deployed_vm = self._create_vm(vm_name=vm_name,
+                                          deploy_app=deploy_app,
                                           virtual_machine=vm,
                                           resource_group_name=resource_group_name)
 
@@ -523,10 +524,11 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
                 self._logger.warning(msg, exc_info=True)
                 self._cs_reservation_output.write_error_message(message=msg)
 
-    def _create_vm(self, vm_name, virtual_machine, resource_group_name):
+    def _create_vm(self, vm_name, deploy_app, virtual_machine, resource_group_name):
         """Create and deploy Azure VM from the given parameters
 
         :param str vm_name:
+        :param deploy_app:
         :param azure.mgmt.compute.models.VirtualMachine virtual_machine:
         :param str resource_group_name:
         """
@@ -538,6 +540,7 @@ class BaseAzureDeployVMFlow(AbstractDeployFlow):
             task_waiter_manager=self._task_waiter_manager,
             vm_actions=vm_actions,
             vm_name=vm_name,
+            disk_type=deploy_app.disk_type,
             virtual_machine=virtual_machine,
             resource_group_name=resource_group_name
         ).execute()
