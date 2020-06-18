@@ -24,6 +24,8 @@ from package.cloudshell.cp.azure.flows.power_mgmt import AzurePowerManagementFlo
 from package.cloudshell.cp.azure.flows.vm_details import AzureGetVMDetailsFlow
 from package.cloudshell.cp.azure.flows.refresh_ip import AzureRefreshIPFlow
 from package.cloudshell.cp.azure.flows.cleanup import AzureCleanupSandboxInfraFlow
+from package.cloudshell.cp.azure.flows.create_route_tables import CreateRouteTablesFlow
+from package.cloudshell.cp.azure.request_actions import CreateRouteTablesRequestActions
 from package.cloudshell.cp.azure.utils.cs_ip_pool_manager import CSIPPoolManager
 from package.cloudshell.cp.azure.utils.lock_manager import ThreadLockManager
 
@@ -401,8 +403,28 @@ class AzureDriver(ResourceDriverInterface):
         """
         with LoggingSessionContext(context) as logger:
             logger.info("Starting Create Route Tables command...")
-            logger.debug(f"Request: {request}")
-            # return self.azure_shell.create_route_tables(context, request)
+            api = CloudShellSessionContext(context).get_api()
+
+            resource_config = AzureResourceConfig.from_context(shell_name=self.SHELL_NAME,
+                                                               context=context,
+                                                               api=api)
+
+            request_actions = CreateRouteTablesRequestActions.from_request(request)
+            reservation_info = AzureReservationInfo.from_resource_context(context)
+
+            azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
+                                          azure_tenant_id=resource_config.azure_tenant_id,
+                                          azure_application_id=resource_config.azure_application_id,
+                                          azure_application_key=resource_config.azure_application_key,
+                                          logger=logger)
+
+            route_table_flow = CreateRouteTablesFlow(resource_config=resource_config,
+                                                     reservation_info=reservation_info,
+                                                     azure_client=azure_client,
+                                                     cs_api=api,
+                                                     logger=logger)
+
+            return route_table_flow.create_route_tables(request_actions=request_actions)
 
     def SetAppSecurityGroups(self, context, request):
         """Called via cloudshell API call

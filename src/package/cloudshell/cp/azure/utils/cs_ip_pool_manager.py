@@ -4,7 +4,6 @@ from netaddr import IPNetwork
 
 
 # todo: refactor this class
-# todo: add thread lock here !!
 class CSIPPoolManager:
     DEFAULT_POOL_OWNER = "Azure-Shell"
 
