@@ -35,6 +35,7 @@ class CreateVMNetworkCommand(RollbackCommand):
         self._enable_ip_forwarding = enable_ip_forwarding
         self._region = region
         self._tags = tags
+        self._private_ip_address = None
 
     def _execute(self):
         # private_ip_address in required only in the case of static allocation method
@@ -45,10 +46,9 @@ class CreateVMNetworkCommand(RollbackCommand):
             ip_type=self._private_ip_allocation_method)
 
         if self._network_actions.is_static_ip_allocation_type(ip_type=private_ip_allocation_method):
-            private_ip_address = self._cs_ip_pool_manager.get_ip_from_pool(reservation_id=self._reservation_id,
-                                                                           subnet_cidr=self._subnet.address_prefix)
-        else:
-            private_ip_address = None
+            self._private_ip_address = self._cs_ip_pool_manager.get_ip_from_pool(
+                reservation_id=self._reservation_id,
+                subnet_cidr=self._subnet.address_prefix)
 
         return self._network_actions.create_vm_network(interface_name=self._interface_name,
                                                        subnet=self._subnet,
@@ -58,10 +58,11 @@ class CreateVMNetworkCommand(RollbackCommand):
                                                        region=self._region,
                                                        tags=self._tags,
                                                        private_ip_allocation_method=private_ip_allocation_method,
-                                                       private_ip_address=private_ip_address,
+                                                       private_ip_address=self._private_ip_address,
                                                        add_public_ip=self._add_public_ip,
                                                        enable_ip_forwarding=self._enable_ip_forwarding)
 
     def rollback(self):
-        # todo - if nic creation failed release checked out ip from pool (upd: add this to the rollback command)
-        pass
+        if self._private_ip_address:
+            self._cs_ip_pool_manager.release_ips(reservation_id=self._reservation_info.reservation_id,
+                                                 ips=[self._private_ip_address])
