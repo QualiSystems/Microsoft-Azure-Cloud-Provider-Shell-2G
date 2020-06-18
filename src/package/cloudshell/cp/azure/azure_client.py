@@ -813,3 +813,18 @@ class AzureAPIClient:
         result = self._network_client.public_ip_addresses.delete(public_ip_address_name=public_ip_name,
                                                                  resource_group_name=resource_group_name)
         result.wait()
+
+    @retry(stop_max_attempt_number=RETRYING_STOP_MAX_ATTEMPT_NUMBER, wait_fixed=RETRYING_WAIT_FIXED,
+           retry_on_exception=retry_on_connection_error)
+    def create_route_table(self, resource_group_name, route_table_name, route_table):
+        """
+
+        :param resource_group_name:
+        :param route_table_name:
+        :param route_table:
+        :return:
+        """
+        operation_poller = self._network_client.route_tables.create_or_update(resource_group_name=resource_group_name,
+                                                                              route_table_name=route_table_name,
+                                                                              parameters=route_table)
+        return operation_poller.result()
