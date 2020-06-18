@@ -15,9 +15,17 @@ class CloudShellReservationOutput:
     def write_error_message(self, message):
         """
 
-        :param message:
+        :param str message:
+        :return:
+        """
+        self.write_message(message=self.ERROR_MESSAGE_HTML_TPL.format(message=message))
+
+    def write_message(self, message):
+        """
+
+        :param str message:
         :return:
         """
         self._logger.debug(f"Sending message: '{message}' to the reservation {self._reservation_id} output")
         self._cs_api.WriteMessageToReservationOutput(reservationId=self._reservation_id,
-                                                     message=self.ERROR_MESSAGE_HTML_TPL.format(message=message))
+                                                     message=message)
