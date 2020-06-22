@@ -5,6 +5,9 @@ from azure.mgmt.network.models import SecurityRule
 class NetworkSecurityGroupActions:
     VM_NSG_NAME_TPL = "NSG_{vm_name}"
     INBOUND_RULE_DIRECTION = "Inbound"
+    CUSTOM_NSG_RULE_PREFIX = "custom_rule_"
+    CUSTOM_NSG_RULE_NAME_TPL = (f"{CUSTOM_NSG_RULE_PREFIX}{{vm_name}}_{{dst_address}}_port:"
+                                f"{{dst_port_range}}:{{protocol}}")
 
     def __init__(self, azure_client, logger):
         """
@@ -14,6 +17,14 @@ class NetworkSecurityGroupActions:
         """
         self._azure_client = azure_client
         self._logger = logger
+
+    def prepare_vm_nsg_name(self, vm_name):
+        """
+
+        :param str vm_name:
+        :return:
+        """
+        return self.VM_NSG_NAME_TPL.format(vm_name=vm_name)
 
     def create_network_security_group(self, nsg_name, resource_group_name, region, tags):
         """
@@ -64,7 +75,7 @@ class NetworkSecurityGroupActions:
         :param tags:
         :return:
         """
-        return self.create_network_security_group(nsg_name=self.VM_NSG_NAME_TPL.format(vm_name=vm_name),
+        return self.create_network_security_group(nsg_name=self.prepare_vm_nsg_name(vm_name=vm_name),
                                                   resource_group_name=resource_group_name,
                                                   region=region,
                                                   tags=tags)
@@ -76,7 +87,7 @@ class NetworkSecurityGroupActions:
         :param resource_group_name:
         :return:
         """
-        return self.get_network_security_group(nsg_name=self.VM_NSG_NAME_TPL.format(vm_name=vm_name),
+        return self.get_network_security_group(nsg_name=self.prepare_vm_nsg_name(vm_name=vm_name),
                                                resource_group_name=resource_group_name)
 
     def delete_vm_network_security_group(self, vm_name, resource_group_name):
@@ -86,13 +97,53 @@ class NetworkSecurityGroupActions:
         :param str resource_group_name:
         :return:
         """
-        self.delete_network_security_group(nsg_name=self.VM_NSG_NAME_TPL.format(vm_name=vm_name),
+        self.delete_network_security_group(nsg_name=self.prepare_vm_nsg_name(vm_name=vm_name),
                                            resource_group_name=resource_group_name)
 
+    def create_custom_nsg_rule(self, vm_name, rule_priority, resource_group_name, nsg_name, dst_address=None,
+                               src_address=None, dst_port_from=None, dst_port_to=None, protocol=None):
+        """
+
+        :param vm_name:
+        :param rule_priority:
+        :param resource_group_name:
+        :param nsg_name:
+        :param src_address:
+        :param dst_address:
+        :param dst_port_from:
+        :param dst_port_to:
+        :param protocol:
+        :return:
+        """
+        if all([dst_port_from is None, dst_port_to is None]):
+            dst_port_range = SecurityRuleProtocol.asterisk
+        else:
+            dst_port_range = dst_port_from if dst_port_from == dst_port_to else f"{dst_port_from}-{dst_port_to}"
+
+        dst_address = dst_address or RouteNextHopType.internet
+        protocol = protocol or SecurityRuleProtocol.asterisk
+        src_address = src_address or RouteNextHopType.internet
+
+        rule_name = self.CUSTOM_NSG_RULE_NAME_TPL.format(vm_name=vm_name,
+                                                         dst_address=dst_address,
+                                                         dst_port_range=dst_port_range,
+                                                         protocol=protocol)
+
+        return self.create_nsg_allow_rule(rule_name=rule_name,
+                                          rule_priority=rule_priority,
+                                          resource_group_name=resource_group_name,
+                                          nsg_name=nsg_name,
+                                          src_address=src_address,
+                                          dst_address=dst_address,
+                                          dst_port_range=dst_port_range,
+                                          protocol=protocol)
+
     def create_nsg_allow_rule(self, rule_name, rule_priority, resource_group_name, nsg_name,
-                              src_address=RouteNextHopType.internet, dst_address=RouteNextHopType.internet,
+                              src_address=RouteNextHopType.internet,
+                              dst_address=RouteNextHopType.internet,
                               src_port_range=SecurityRuleProtocol.asterisk,
-                              dst_port_range=SecurityRuleProtocol.asterisk, protocol=SecurityRuleProtocol.asterisk):
+                              dst_port_range=SecurityRuleProtocol.asterisk,
+                              protocol=SecurityRuleProtocol.asterisk):
         """
 
         :param str rule_name:
@@ -179,3 +230,17 @@ class NetworkSecurityGroupActions:
         :return:
         """
         return self._azure_client.get_nsg_rules(resource_group_name=resource_group_name, nsg_name=nsg_name)
+
+    def delete_custom_nsg_rules(self, nsg_name, resource_group_name):
+        """
+
+        :param str nsg_name:
+        :param str resource_group_name:
+        :return:
+        """
+        all_rules = self.get_nsg_rules(nsg_name=nsg_name, resource_group_name=resource_group_name)
+
+        for rule in (rule for rule in all_rules if rule.name.startswith(self.CUSTOM_NSG_RULE_PREFIX)):
+            self.delete_nsg_rule(rule_name=rule.name,
+                                 nsg_name=nsg_name,
+                                 resource_group_name=resource_group_name)

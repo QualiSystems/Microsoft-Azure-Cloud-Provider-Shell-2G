@@ -1,7 +1,7 @@
-import requests
 from azure.mgmt.compute.models import OperatingSystemTypes
 from msrestazure.azure_exceptions import CloudError
-import ipaddress
+import requests
+from requests.utils import is_valid_cidr
 
 from package.cloudshell.cp.azure.actions.network import NetworkActions
 
@@ -94,20 +94,6 @@ class ValidationActions(NetworkActions):
             if vm_size not in available_vm_sizes:
                 raise Exception(f"VM Size {vm_size} is not valid")
 
-    def _is_valid_cidr(self, cidr):
-        """Validate that CIDR have a correct format. Example "10.10.10.10/24"
-
-        :param str cidr:
-        :rtype: bool
-        """
-        try:
-            ipaddress.ip_network(cidr, strict=False)
-        except ValueError:
-            self._logger.exception(f"CIDR {cidr} is in invalid format")
-            return False
-
-        return "/" in cidr
-
     def validate_azure_additional_networks(self, mgmt_networks):
         """
 
@@ -116,9 +102,10 @@ class ValidationActions(NetworkActions):
         """
         self._logger.info("Validating Deploy App 'Additional Mgmt Networks' attribute")
         for cidr in mgmt_networks:
-            if not self._is_valid_cidr(cidr):
-                raise Exception(f"CIDR {cidr} under the 'Additional Mgmt Networks' attribute "
-                                f"is not in the valid format")
+            if not is_valid_cidr(cidr):
+                msg = f"CIDR {cidr} under the 'Additional Mgmt Networks' attribute is not in the valid format"
+                self._logger.exception(msg)
+                raise Exception(msg)
 
     def validate_deploy_app_add_public_ip(self, deploy_app, connect_subnets):
         """

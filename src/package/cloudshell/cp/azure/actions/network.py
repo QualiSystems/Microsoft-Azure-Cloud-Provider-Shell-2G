@@ -41,7 +41,7 @@ class NetworkActions:
         raise Exception(f"Unable to find virtual network with tag {tag_key}={tag_value}")
 
     @staticmethod
-    def _prepare_sandbox_subnet_name(resource_group_name, cidr):
+    def prepare_sandbox_subnet_name(resource_group_name, cidr):
         """
 
         :param resource_group_name:
@@ -180,7 +180,7 @@ class NetworkActions:
         :param network_security_group:
         :return:
         """
-        subnet_name = self._prepare_sandbox_subnet_name(resource_group_name=resource_group_name, cidr=cidr)
+        subnet_name = self.prepare_sandbox_subnet_name(resource_group_name=resource_group_name, cidr=cidr)
         return self.create_subnet(subnet_name=subnet_name,
                                   cidr=cidr,
                                   vnet=vnet,
@@ -196,7 +196,7 @@ class NetworkActions:
         :param str mgmt_resource_group_name:
         :return:
         """
-        subnet_name = self._prepare_sandbox_subnet_name(resource_group_name=resource_group_name, cidr=cidr)
+        subnet_name = self.prepare_sandbox_subnet_name(resource_group_name=resource_group_name, cidr=cidr)
         return self.get_subnet(subnet_name=subnet_name,
                                vnet_name=vnet_name,
                                resource_group_name=mgmt_resource_group_name)
@@ -210,7 +210,7 @@ class NetworkActions:
         :param str mgmt_resource_group_name:
         :return:
         """
-        subnet_name = self._prepare_sandbox_subnet_name(resource_group_name=resource_group_name, cidr=cidr)
+        subnet_name = self.prepare_sandbox_subnet_name(resource_group_name=resource_group_name, cidr=cidr)
         self.delete_subnet(subnet_name=subnet_name,
                            vnet_name=vnet_name,
                            resource_group_name=mgmt_resource_group_name)
