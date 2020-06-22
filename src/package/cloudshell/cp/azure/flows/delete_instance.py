@@ -11,19 +11,21 @@ from msrestazure.azure_exceptions import CloudError
 
 
 class AzureDeleteInstanceFlow:
-    def __init__(self, resource_config, azure_client, reservation_info, cs_ip_pool_manager, logger):
+    def __init__(self, resource_config, azure_client, reservation_info, cs_ip_pool_manager, lock_manager, logger):
         """
 
         :param resource_config:
         :param azure_client:
         :param reservation_info:
         :param cs_ip_pool_manager:
+        :param lock_manager:
         :param logging.Logger logger:
         """
         self._resource_config = resource_config
         self._azure_client = azure_client
         self._reservation_info = reservation_info
         self._cs_ip_pool_manager = cs_ip_pool_manager
+        self._lock_manager = lock_manager
         self._logger = logger
 
     def _get_public_ip_names(self, network_interfaces):
@@ -147,3 +149,5 @@ class AzureDeleteInstanceFlow:
             except Exception:
                 self._logger.warning(f"Unable to release private IPs {private_ips} from the CloudShell:", exc_info=True)
 
+        vm_nsg_name = nsg_actions.prepare_vm_nsg_name(vm_name=deployed_app.name)
+        self._lock_manager.remove_lock(vm_nsg_name)

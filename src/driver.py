@@ -1,6 +1,7 @@
 from cloudshell.cp.core.cancellation_manager import CancellationContextManager
 from cloudshell.cp.core.request_actions import DeployVMRequestActions, PrepareSandboxInfraRequestActions, \
-    GetVMDetailsRequestActions, CleanupSandboxInfraRequestActions, DeployedVMRequestActions
+    GetVMDetailsRequestActions, CleanupSandboxInfraRequestActions, DeployedVMRequestActions, \
+    SetAppSecurityGroupsRequestActions
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
 from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
 from cloudshell.shell.core.session.logging_session import LoggingSessionContext
@@ -17,6 +18,7 @@ from package.cloudshell.cp.azure.models.deployed_app import AzureVMFromMarketpla
     AzureVMFromCustomImageDeployedApp
 from package.cloudshell.cp.azure.flows.access_key import AzureGetAccessKeyFlow
 from package.cloudshell.cp.azure.flows.application_ports import AzureGetApplicationPortsFlow
+from package.cloudshell.cp.azure.flows.app_security_groups import AzureAppSecurityGroupsFlow
 from package.cloudshell.cp.azure.flows.available_ip import AzureGetAvailablePrivateIPFlow
 from package.cloudshell.cp.azure.flows.deploy_vm.deploy_custom_vm import AzureDeployCustomVMFlow
 from package.cloudshell.cp.azure.flows.deploy_vm.deploy_marketplace_vm import AzureDeployMarketplaceVMFlow
@@ -354,6 +356,7 @@ class AzureDriver(ResourceDriverInterface):
                                                   azure_client=azure_client,
                                                   reservation_info=reservation_info,
                                                   cs_ip_pool_manager=cs_ip_pool_manager,
+                                                  lock_manager=self.lock_manager,
                                                   logger=logger)
 
             delete_flow.delete_instance(deployed_app=deployed_vm_actions.deployed_app)
@@ -449,23 +452,22 @@ class AzureDriver(ResourceDriverInterface):
                                                                context=context,
                                                                api=api)
 
-            # todo: need request for this command !!!
+            request_actions = SetAppSecurityGroupsRequestActions.from_request(request)
+            reservation_info = AzureReservationInfo.from_resource_context(context)
 
-            # request_actions = SetAppSecurityGroupsRequestActions.from_request(request)
-            # reservation_info = AzureReservationInfo.from_context(context.reservation)
-            #
-            # azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
-            #                               azure_tenant_id=resource_config.azure_tenant_id,
-            #                               azure_application_id=resource_config.azure_application_id,
-            #                               azure_application_key=resource_config.azure_application_key,
-            #                               logger=logger)
-            #
-            # app_security_groups_flow = AzureAppSecurityGroupsFlow(resource_config=resource_config,
-            #                                             azure_client=azure_client,
-            #                                             reservation_info=reservation_info,
-            #                                             logger=logger)
-            #
-            # return app_security_groups_flow.set_app_security_groups(request_actions=request_actions)
+            azure_client = AzureAPIClient(azure_subscription_id=resource_config.azure_subscription_id,
+                                          azure_tenant_id=resource_config.azure_tenant_id,
+                                          azure_application_id=resource_config.azure_application_id,
+                                          azure_application_key=resource_config.azure_application_key,
+                                          logger=logger)
+
+            app_security_groups_flow = AzureAppSecurityGroupsFlow(resource_config=resource_config,
+                                                                  azure_client=azure_client,
+                                                                  reservation_info=reservation_info,
+                                                                  lock_manager=self.lock_manager,
+                                                                  logger=logger)
+
+            return app_security_groups_flow.set_app_security_groups(request_actions=request_actions)
 
     def cleanup(self):
         """Destroy the driver session, this function is called every time a driver instance is destroyed

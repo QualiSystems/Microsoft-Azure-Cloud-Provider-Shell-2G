@@ -61,18 +61,6 @@ class AzureCleanupSandboxInfraFlow(AbstractCleanupSandboxInfraFlow):
         cleanup_commands = []
         for subnet in self._find_sandbox_subnets(resource_group_name=resource_group_name,
                                                  sandbox_vnet=sandbox_vnet):
-            # subnet.network_security_group = None
-            # subnet.route_table = None
-            # network_actions.update_subnet(subnet_name=subnet.name,
-            #                               vnet_name=sandbox_vnet.name,
-            #                               resource_group_name=resource_group_name,
-            #                               subnet=subnet)
-
-            # todo: is it needed ?
-            # network_actions.update_subnet(subnet_name=subnet.name,
-            #                               vnet_name=sandbox_vnet.name,
-            #                               resource_group_name=resource_group_name,
-            #                               subnet=subnet)
 
             cleanup_commands.append(partial(network_actions.delete_subnet,
                                             subnet_name=subnet.name,
