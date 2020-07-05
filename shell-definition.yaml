@@ -12,8 +12,6 @@ description: >
 imports:
   - cloudshell_standard: cloudshell_cloud_provider_standard_1_0_0.yaml
 
-# TODO: add hidden attributes !!!
-
 
 node_types:
   vendor.resource.Microsoft Azure 2G:
@@ -42,8 +40,10 @@ node_types:
             type: string
           VM Size:
             type: string
+            default: Standard_A3
           Networks in use:
             type: string
+            default: "10.0.0.0/24"
           Azure Subscription ID:
             type: string
           Azure Tenant ID:
@@ -56,12 +56,11 @@ node_types:
             type: string
           Execution Server Selector:
             type: string
-            default: ""
           Additional Mgmt Networks:
             type: string
-            default: ""
           Private IP Allocation Method:
             type: string
+            default: "Azure Allocation"
     properties:
       Region:
         type: string
@@ -69,12 +68,10 @@ node_types:
 
       VM Size:
         type: string
-        default: Standard_A3
         description: "The Microsoft Azure VM Size. The VM Size determines the CPU, memory, disk size and networking capacity of the VM. For example: “Standard_A1_v2”. Use the &lt;a href='https://docs.microsoft.com/en-us/azure/virtual-machines/virtual-machines-windows-sizes' target='_blank'&gt;Azure documentation &lt;/a&gt; for more information, or the Azure CLI for a list of your region’s supported values: &lt;i&gt;az vm list-sizes --location “West US”&lt;/i&gt;"
 
       Networks in use:
         type: string
-        default: "10.0.0.0/24"
         description: "Reserved networks to be excluded when allocating Sandbox networks. The value should include at least the Management Network. The syntax is comma-separated CIDRs. For example: “10.0.0.0/24, 10.1.0.0/16, 172.31.0.0/24”."
 
       Azure Subscription ID:
@@ -99,17 +96,14 @@ node_types:
 
       Execution Server Selector:
         type: string
-        default: ""
         description: "This attribute points to a pre-define group of execution servers. Usually used for different sites or domains."
 
       Additional Mgmt Networks:
         type: string
-        default: ""
         description: "Networks to be allowed to interact with all sandboxes. This is used for allowing connectivity to Azure resources outside the CloudShell Management VNet that should be available to CloudShell sandboxes. The syntax is comma separated CIDRs."
 
       Private IP Allocation Method:
         type: string
-        default: "Azure Allocation"
         description: "Defines the method that will be used to allocated private ip addresses to VMs. When Cloudshell Allocation method is selected the Azure-Shell will use the CloudShell Pool API to checkout the next available ip address when needed. When the instance is deleted the checked out ip addresses will be released. When Azure Allocation method is selected the private ips will be assigned by Azure when creating the network interface."
         constraints:
           - valid_values: ["Azure Allocation", "Cloudshell Allocation"]
