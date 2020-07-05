@@ -140,7 +140,7 @@ class NetworkSecurityGroupActions:
 
     def create_nsg_allow_rule(self, rule_name, rule_priority, resource_group_name, nsg_name,
                               src_address=RouteNextHopType.internet,
-                              dst_address=RouteNextHopType.internet,
+                              dst_address=SecurityRuleProtocol.asterisk,
                               src_port_range=SecurityRuleProtocol.asterisk,
                               dst_port_range=SecurityRuleProtocol.asterisk,
                               protocol=SecurityRuleProtocol.asterisk):
