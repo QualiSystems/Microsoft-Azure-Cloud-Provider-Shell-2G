@@ -373,3 +373,13 @@ class NetworkActions:
         self._logger.info(f"Deleting Public IP {public_ip_name}")
         return self._azure_client.delete_public_ip(public_ip_name=public_ip_name,
                                                    resource_group_name=resource_group_name)
+
+    def delete_interface_public_ip(self, interface_name, resource_group_name):
+        """
+
+        :param interface_name:
+        :param resource_group_name:
+        :return:
+        """
+        self.delete_public_ip(public_ip_name=self.PUBLIC_IP_NAME_TPL.format(interface_name=interface_name),
+                              resource_group_name=resource_group_name)
