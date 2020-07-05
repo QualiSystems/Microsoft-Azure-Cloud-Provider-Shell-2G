@@ -63,6 +63,13 @@ class CreateVMNetworkCommand(RollbackCommand):
                                                        enable_ip_forwarding=self._enable_ip_forwarding)
 
     def rollback(self):
+        self._network_actions.delete_vm_network(interface_name=self._interface_name,
+                                                resource_group_name=self._resource_group_name)
+
+        if self._add_public_ip:
+            self._network_actions.delete_interface_public_ip(interface_name=self._interface_name,
+                                                             resource_group_name=self._resource_group_name)
+
         if self._private_ip_address:
             self._cs_ip_pool_manager.release_ips(reservation_id=self._reservation_info.reservation_id,
                                                  ips=[self._private_ip_address])
