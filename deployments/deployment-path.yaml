@@ -35,7 +35,7 @@ node_types:
         type: string
         description:
         default: latest
-        tags: [user_input]
+        tags: []
 
       VM Size:
         type: string
@@ -81,7 +81,7 @@ node_types:
         type: integer
         default: 1200
         description: "Extension Script Timeout in seconds"
-        tags: [user_input]
+        tags: []
 
       Public IP Type:
         type: string
@@ -169,7 +169,7 @@ node_types:
         type: integer
         default: 1200
         description: "Extension Script Timeout in seconds"
-        tags: [user_input]
+        tags: []
 
       Public IP Type:
         type: string
