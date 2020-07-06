@@ -64,7 +64,7 @@ node_types:
       Wait for IP:
         type: boolean
         default: false
-        description: "Enables the automatic power off of an app during reservation Teardown."
+        description: "If set to False the deployment will not wait for the VM to get an IP."
         tags: [user_input]
 
       Extension Script file:
@@ -152,7 +152,7 @@ node_types:
       Wait for IP:
         type: boolean
         default: false
-        description: "Enables the automatic power off of an app during reservation Teardown."
+        description: "If set to False the deployment will not wait for the VM to get an IP."
         tags: [user_input]
 
       Extension Script file:
