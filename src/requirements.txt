@@ -3,7 +3,6 @@ cloudshell-cp-core>=1.1.0,<1.2.0
 cloudshell-shell-standards>=1.0,<2.0
 cloudshell-shell-flows>=1.0,<2
 cloudshell-automation-api>=9.2
-ipaddress==1.0.23
 netaddr==0.7.19
 requests==2.14.2
 msrest==0.6.11
