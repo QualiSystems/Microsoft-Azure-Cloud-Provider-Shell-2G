@@ -2,6 +2,7 @@ from functools import partial
 
 from msrestazure.azure_exceptions import CloudError
 from azure.mgmt.network import models
+from netaddr import IPNetwork
 
 
 class NetworkActions:
@@ -105,7 +106,6 @@ class NetworkActions:
         :param network_security_group:
         :return:
         """
-        # TODO: CHECK THIS !! This method is atomic because we have to sync subnet creation for the entire sandbox vnet
         self._logger.info(f"Creating subnet {subnet_name} under: {resource_group_name}/{vnet.name}...")
 
         create_subnet_cmd = partial(self._azure_client.create_subnet,
@@ -215,6 +215,21 @@ class NetworkActions:
                            vnet_name=vnet_name,
                            resource_group_name=mgmt_resource_group_name)
 
+    def _get_stale_subnet(self, vnet, subnet_cidr):
+        """
+
+        :param VirtualNetwork vnet:
+        :param str subnet_cidr:
+        """
+        stale_network = IPNetwork(subnet_cidr)
+
+        for subnet in vnet.subnets:
+            subnet_network = IPNetwork(subnet.address_prefix)
+            if any([stale_network in subnet_network, subnet_network in stale_network]):
+                return subnet
+
+        raise Exception(f"Unable to cleanup stale subnet for CIDR {subnet_cidr}")
+
     def _cleanup_stale_subnet(self, vnet, subnet_cidr, resource_group_name):
         """
 
@@ -225,7 +240,7 @@ class NetworkActions:
         self._logger.info(f"Subnet with CIDR {subnet_cidr} exists in vNET with a different name. "
                           f"Cleaning the stale data...")
 
-        subnet = next(subnet for subnet in vnet.subnets if subnet.address_prefix == subnet_cidr)
+        subnet = self._get_stale_subnet(vnet=vnet, subnet_cidr=subnet_cidr)
 
         if subnet.network_security_group is not None:
             self._logger.info(f"Detaching NSG from subnet {subnet.id}")
