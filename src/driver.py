@@ -6,30 +6,29 @@ from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterf
 from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
 from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 
-from package.cloudshell.cp.azure import constants
-from package.cloudshell.cp.azure.azure_client import AzureAPIClient
-from package.cloudshell.cp.azure.flows.autoload import AzureAutoloadFlow
-from package.cloudshell.cp.azure.flows.delete_instance import AzureDeleteInstanceFlow
-from package.cloudshell.cp.azure.flows.prepare_sandbox_infra import AzurePrepareSandboxInfraFlow
-from package.cloudshell.cp.azure.reservation_info import AzureReservationInfo
-from package.cloudshell.cp.azure.resource_config import AzureResourceConfig
-from package.cloudshell.cp.azure.models.deploy_app import AzureVMFromMarketplaceDeployApp, AzureVMFromCustomImageDeployApp
-from package.cloudshell.cp.azure.models.deployed_app import AzureVMFromMarketplaceDeployedApp, \
-    AzureVMFromCustomImageDeployedApp
-from package.cloudshell.cp.azure.flows.access_key import AzureGetAccessKeyFlow
-from package.cloudshell.cp.azure.flows.application_ports import AzureGetApplicationPortsFlow
-from package.cloudshell.cp.azure.flows.app_security_groups import AzureAppSecurityGroupsFlow
-from package.cloudshell.cp.azure.flows.available_ip import AzureGetAvailablePrivateIPFlow
-from package.cloudshell.cp.azure.flows.deploy_vm.deploy_custom_vm import AzureDeployCustomVMFlow
-from package.cloudshell.cp.azure.flows.deploy_vm.deploy_marketplace_vm import AzureDeployMarketplaceVMFlow
-from package.cloudshell.cp.azure.flows.power_mgmt import AzurePowerManagementFlow
-from package.cloudshell.cp.azure.flows.vm_details import AzureGetVMDetailsFlow
-from package.cloudshell.cp.azure.flows.refresh_ip import AzureRefreshIPFlow
-from package.cloudshell.cp.azure.flows.cleanup import AzureCleanupSandboxInfraFlow
-from package.cloudshell.cp.azure.flows.create_route_tables import CreateRouteTablesFlow
-from package.cloudshell.cp.azure.request_actions import CreateRouteTablesRequestActions
-from package.cloudshell.cp.azure.utils.cs_ip_pool_manager import CSIPPoolManager
-from package.cloudshell.cp.azure.utils.lock_manager import ThreadLockManager
+from cloudshell.cp.azure import constants
+from cloudshell.cp.azure.azure_client import AzureAPIClient
+from cloudshell.cp.azure.flows.autoload import AzureAutoloadFlow
+from cloudshell.cp.azure.flows.delete_instance import AzureDeleteInstanceFlow
+from cloudshell.cp.azure.flows.prepare_sandbox_infra import AzurePrepareSandboxInfraFlow
+from cloudshell.cp.azure.reservation_info import AzureReservationInfo
+from cloudshell.cp.azure.resource_config import AzureResourceConfig
+from cloudshell.cp.azure.models.deploy_app import AzureVMFromMarketplaceDeployApp, AzureVMFromCustomImageDeployApp
+from cloudshell.cp.azure.models.deployed_app import AzureVMFromMarketplaceDeployedApp, AzureVMFromCustomImageDeployedApp
+from cloudshell.cp.azure.flows.access_key import AzureGetAccessKeyFlow
+from cloudshell.cp.azure.flows.application_ports import AzureGetApplicationPortsFlow
+from cloudshell.cp.azure.flows.app_security_groups import AzureAppSecurityGroupsFlow
+from cloudshell.cp.azure.flows.available_ip import AzureGetAvailablePrivateIPFlow
+from cloudshell.cp.azure.flows.deploy_vm.deploy_custom_vm import AzureDeployCustomVMFlow
+from cloudshell.cp.azure.flows.deploy_vm.deploy_marketplace_vm import AzureDeployMarketplaceVMFlow
+from cloudshell.cp.azure.flows.power_mgmt import AzurePowerManagementFlow
+from cloudshell.cp.azure.flows.vm_details import AzureGetVMDetailsFlow
+from cloudshell.cp.azure.flows.refresh_ip import AzureRefreshIPFlow
+from cloudshell.cp.azure.flows.cleanup import AzureCleanupSandboxInfraFlow
+from cloudshell.cp.azure.flows.create_route_tables import CreateRouteTablesFlow
+from cloudshell.cp.azure.request_actions import CreateRouteTablesRequestActions
+from cloudshell.cp.azure.utils.cs_ip_pool_manager import CSIPPoolManager
+from cloudshell.cp.azure.utils.lock_manager import ThreadLockManager
 
 
 class AzureDriver(ResourceDriverInterface):
