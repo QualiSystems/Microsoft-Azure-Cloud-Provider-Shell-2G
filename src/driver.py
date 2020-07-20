@@ -1,6 +1,6 @@
 from cloudshell.cp.core.cancellation_manager import CancellationContextManager
 from cloudshell.cp.core.request_actions import DeployVMRequestActions, PrepareSandboxInfraRequestActions, \
-    GetVMDetailsRequestActions, CleanupSandboxInfraRequestActions, DeployedVMRequestActions, \
+    GetVMDetailsRequestActions, CleanupSandboxInfraRequestActions, DeployedVMActions, \
     SetAppSecurityGroupsRequestActions
 from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
 from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
@@ -201,7 +201,7 @@ class AzureDriver(ResourceDriverInterface):
                                           logger=logger)
 
             resource = context.remote_endpoints[0]
-            deployed_vm_actions = DeployedVMRequestActions.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource)
 
             power_mgmt_flow = AzurePowerManagementFlow(resource_config=resource_config,
                                                        azure_client=azure_client,
@@ -234,7 +234,7 @@ class AzureDriver(ResourceDriverInterface):
                                           logger=logger)
 
             resource = context.remote_endpoints[0]
-            deployed_vm_actions = DeployedVMRequestActions.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource)
 
             power_mgmt_flow = AzurePowerManagementFlow(resource_config=resource_config,
                                                        azure_client=azure_client,
@@ -274,7 +274,7 @@ class AzureDriver(ResourceDriverInterface):
                                           logger=logger)
 
             resource = context.remote_endpoints[0]
-            deployed_vm_actions = DeployedVMRequestActions.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource)
 
             refresh_ip_flow = AzureRefreshIPFlow(resource_config=resource_config,
                                                  azure_client=azure_client,
@@ -349,7 +349,7 @@ class AzureDriver(ResourceDriverInterface):
                                           logger=logger)
 
             resource = context.remote_endpoints[0]
-            deployed_vm_actions = DeployedVMRequestActions.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource)
 
             delete_flow = AzureDeleteInstanceFlow(resource_config=resource_config,
                                                   azure_client=azure_client,
@@ -498,7 +498,7 @@ class AzureDriver(ResourceDriverInterface):
                                           logger=logger)
 
             resource = context.remote_endpoints[0]
-            deployed_vm_actions = DeployedVMRequestActions.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource)
 
             application_ports_flow = AzureGetApplicationPortsFlow(resource_config=resource_config,
                                                                   azure_client=azure_client,
