@@ -200,8 +200,11 @@ class AzureDriver(ResourceDriverInterface):
                                           azure_application_key=resource_config.azure_application_key,
                                           logger=logger)
 
+            for deploy_app_cls in (AzureVMFromMarketplaceDeployedApp, AzureVMFromCustomImageDeployedApp):
+                DeployedVMActions.register_deployment_path(deploy_app_cls)
+
             resource = context.remote_endpoints[0]
-            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource=resource, cs_api=api)
 
             power_mgmt_flow = AzurePowerManagementFlow(resource_config=resource_config,
                                                        azure_client=azure_client,
@@ -233,8 +236,11 @@ class AzureDriver(ResourceDriverInterface):
                                           azure_application_key=resource_config.azure_application_key,
                                           logger=logger)
 
+            for deploy_app_cls in (AzureVMFromMarketplaceDeployedApp, AzureVMFromCustomImageDeployedApp):
+                DeployedVMActions.register_deployment_path(deploy_app_cls)
+
             resource = context.remote_endpoints[0]
-            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource=resource, cs_api=api)
 
             power_mgmt_flow = AzurePowerManagementFlow(resource_config=resource_config,
                                                        azure_client=azure_client,
@@ -273,8 +279,11 @@ class AzureDriver(ResourceDriverInterface):
                                           azure_application_key=resource_config.azure_application_key,
                                           logger=logger)
 
+            for deploy_app_cls in (AzureVMFromMarketplaceDeployedApp, AzureVMFromCustomImageDeployedApp):
+                DeployedVMActions.register_deployment_path(deploy_app_cls)
+
             resource = context.remote_endpoints[0]
-            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource=resource, cs_api=api)
 
             refresh_ip_flow = AzureRefreshIPFlow(resource_config=resource_config,
                                                  azure_client=azure_client,
@@ -307,7 +316,8 @@ class AzureDriver(ResourceDriverInterface):
             for deploy_app_cls in (AzureVMFromMarketplaceDeployedApp, AzureVMFromCustomImageDeployedApp):
                 GetVMDetailsRequestActions.register_deployment_path(deploy_app_cls)
 
-            request_actions = GetVMDetailsRequestActions.from_request(requests)
+            request_actions = GetVMDetailsRequestActions.from_request(request=requests, cs_api=api)
+
             cancellation_manager = CancellationContextManager(cancellation_context)
             reservation_info = AzureReservationInfo.from_resource_context(context)
 
@@ -348,8 +358,11 @@ class AzureDriver(ResourceDriverInterface):
                                           azure_application_key=resource_config.azure_application_key,
                                           logger=logger)
 
+            for deploy_app_cls in (AzureVMFromMarketplaceDeployedApp, AzureVMFromCustomImageDeployedApp):
+                GetVMDetailsRequestActions.register_deployment_path(deploy_app_cls)
+
             resource = context.remote_endpoints[0]
-            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource=resource, cs_api=api)
 
             delete_flow = AzureDeleteInstanceFlow(resource_config=resource_config,
                                                   azure_client=azure_client,
@@ -497,8 +510,11 @@ class AzureDriver(ResourceDriverInterface):
                                           azure_application_key=resource_config.azure_application_key,
                                           logger=logger)
 
+            for deploy_app_cls in (AzureVMFromMarketplaceDeployedApp, AzureVMFromCustomImageDeployedApp):
+                DeployedVMActions.register_deployment_path(deploy_app_cls)
+
             resource = context.remote_endpoints[0]
-            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource)
+            deployed_vm_actions = DeployedVMActions.from_remote_resource(resource=resource, cs_api=api)
 
             application_ports_flow = AzureGetApplicationPortsFlow(resource_config=resource_config,
                                                                   azure_client=azure_client,
