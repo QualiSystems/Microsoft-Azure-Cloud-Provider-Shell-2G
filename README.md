@@ -1,5 +1,5 @@
 # Azure Shell 2 Gen
-Virtual Internet Routing Lab cloud provider
+Microsoft Azure cloud provider
 
 ![Image][1]
 
