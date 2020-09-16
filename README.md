@@ -68,7 +68,7 @@ The following table describes attributes that are unique to this shell and are n
 |Azure Application Key|Password|Application key associated with the Azure API application. The application key allows CloudShell to access the Azure API and is generated as part of the Azure application’s configuration process|
 |Management Group Name|String|The name of the Management Resource Group|
 |Additional Mgmt Networks|String|Networks to be allowed to interact with all sandboxes. This is used for allowing connectivity to Azure resources outside the CloudShell Management VNet that should be available to CloudShell sandboxes. The syntax is comma separated CIDRs.|
-|Private IP Allocation Method|String|Defines the method that will be used to allocated private ip addresses to VMs. When Cloudshell Allocation method is selected the Azure-Shell will use the CloudShell Pool API to checkout the next available ip address when needed. When the instance is deleted the checked out ip addresses will be released. When Azure Allocation method is selected the private ips will be assigned by Azure when creating the network interface.|
+|Private IP Allocation Method|String|Defines the method that will be used to allocated private IP addresses to VMs. When Cloudshell Allocation method is selected the Azure-Shell will use the CloudShell Pool API to checkout the next available IP address when needed. When the instance is deleted the checked out IP addresses will be released. When Azure Allocation method is selected the private ips will be assigned by Azure when creating the network interface.|
 
 
 ### Automation
