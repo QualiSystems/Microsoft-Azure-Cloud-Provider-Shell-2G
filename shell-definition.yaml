@@ -61,6 +61,8 @@ node_types:
           Private IP Allocation Method:
             type: string
             default: "Azure Allocation"
+          Custom Tags:
+            type: string
     properties:
       Region:
         type: string
@@ -101,6 +103,10 @@ node_types:
       Additional Mgmt Networks:
         type: string
         description: "Networks to be allowed to interact with all sandboxes. This is used for allowing connectivity to Azure resources outside the CloudShell Management VNet that should be available to CloudShell sandboxes. The syntax is comma separated CIDRs."
+
+      Custom Tags:
+        type: string
+        description: "Semi-colon separated list of tags that will be applied to the VM and all related objects created during the app deploy. Attribute supports the following syntax: [TagName]=[TagValue]; [TagName]=[TagValue]. For example: “Tag1=Val1;Tag2=Val2”"
 
       Private IP Allocation Method:
         type: string
