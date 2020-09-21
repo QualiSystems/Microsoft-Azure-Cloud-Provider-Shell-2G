@@ -88,7 +88,7 @@ The shell comprises:
 
 |File name|Description|
 |:---|:---|
-|Microsoft Azure.zip|Device shell package|
+|Microsoft Azure Cloud Provider Shell 2G.zip|Device shell package|
 |cloudshell-azure-dependencies-package-1.0.x.zip|Shell Python dependencies (for offline deployments only)|
 
 # Importing and Configuring the Shell
