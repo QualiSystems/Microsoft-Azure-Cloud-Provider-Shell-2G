@@ -1,9 +1,6 @@
-# Microsoft Azure Cloud Provider Shell 2G
-Microsoft Azure cloud provider
-
 ![Image][1]
 
-# Microsoft Azure Cloud Provider Shell 2G
+# **Microsoft Azure Cloud Provider Shell 2G**
 
 Release date: August 2020
 
