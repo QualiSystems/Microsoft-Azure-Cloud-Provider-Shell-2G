@@ -1,9 +1,9 @@
-# Azure Shell 2 Gen
+# Microsoft Azure Cloud Provider Shell 2G
 Microsoft Azure cloud provider
 
 ![Image][1]
 
-# Azure Shell 2 Gen
+# Microsoft Azure Cloud Provider Shell 2G
 
 Release date: August 2020
 
@@ -28,19 +28,19 @@ A shell integrates a device model, application or other technology with CloudShe
 ### Cloud Provider Shells
 CloudShell Cloud Providers shells provide L2 or L3 connectivity between resources and/or Apps.
 
-### Azure Shell 2 Gen
-Azure Shell 2 Gen provides you with apps deployment and management capabilities. 
+### Microsoft Azure Cloud Provider Shell 2G
+Microsoft Azure Cloud Provider Shell 2G provides you with apps deployment and management capabilities. 
 
 For more information on the device, see the vendor's official product documentation.
 
 ### Standard version
-Azure Shell 2 Gen is based on the Cloud Provider Standard version **1.0.0**.
+Microsoft Azure Cloud Provider Shell 2G is based on the Cloud Provider Standard version **1.0.0**.
 
 For detailed information about the shell’s structure and attributes, see the [Cloud Provider Standard](https://github.com/QualiSystems/cloudshell-standards/blob/master/Documentation/cloud_provider_standard.md) in GitHub.
 
 ### Requirements
 
-Release: Azure Shell 2 Gen
+Release: Microsoft Azure Cloud Provider Shell 2G
 
 ▪ CloudShell version **9.3 and above**
 
@@ -50,7 +50,7 @@ Release: Azure Shell 2 Gen
 
 The shell's data model includes all shell metadata, families, and attributes.
 
-#### **Azure Shell 2 Gen Attributes**
+#### **Microsoft Azure Cloud Provider Shell 2G Attributes**
 
 The attribute names and types are listed in the following section of the Cloud Provider Shell Standard:
 
@@ -80,7 +80,7 @@ For detailed information on each available commands, see the following section o
 
 
 # Downloading the Shell
-The Azure Shell 2 Gen shell is available from the [Quali Community Integrations](https://community.quali.com/integrations) page. 
+The Microsoft Azure Cloud Provider Shell 2G shell is available from the [Quali Community Integrations](https://community.quali.com/integrations) page. 
 
 Download the files into a temporary location on your local machine. 
 
@@ -92,7 +92,7 @@ The shell comprises:
 |cloudshell-azure-dependencies-package-1.0.x.zip|Shell Python dependencies (for offline deployments only)|
 
 # Importing and Configuring the Shell
-This section describes how to import the Azure Shell 2 Gen shell and configure and modify the shell’s devices.
+This section describes how to import the Microsoft Azure Cloud Provider Shell 2G shell and configure and modify the shell’s devices.
 
 ### Importing the shell into CloudShell
 
@@ -145,7 +145,7 @@ You can also modify existing resources, see [Managing Resources in the Inventory
   1. In the CloudShell Portal, in the **Inventory** dashboard, click **Add New**.
      ![Image][2]
      
-  3. From the list, select **Azure Shell 2 Gen**.
+  3. From the list, select **Microsoft Azure Cloud Provider Shell 2G**.
   
   4. Click **Create**.
   
@@ -162,7 +162,7 @@ You can also modify existing resources, see [Managing Resources in the Inventory
 
 CloudShell validates provided settings and creates the new resource.
 
-_**Azure Shell 2 Gen requires you to create an appropriate App template, which would be deployed as part of the sandbox reservation. For details, see the following CloudShell Help article: [Applications' Typical Workflow](https://help.quali.com/Online%20Help/0.0/Portal/Content/CSP/MNG/Mng-Apps.htm?Highlight=App#Adding)**_
+_**Microsoft Azure Cloud Provider Shell 2G requires you to create an appropriate App template, which would be deployed as part of the sandbox reservation. For details, see the following CloudShell Help article: [Applications' Typical Workflow](https://help.quali.com/Online%20Help/0.0/Portal/Content/CSP/MNG/Mng-Apps.htm?Highlight=App#Adding)**_
 
 # Updating Python Dependencies for Shells
 This section explains how to update your Python dependencies folder. This is required when you upgrade a shell that uses new/updated dependencies. It applies to both online and offline dependencies.
@@ -193,7 +193,7 @@ To connect with Quali users and experts from around the world, ask questions and
 
 ### What's New
 
-For release updates, see the shell's [GitHub releases page](https://github.com/QualiSystems/Azure-Shell-2G/releases).
+For release updates, see the shell's [GitHub releases page](https://github.com/QualiSystems/Microsoft-Azure-Cloud-Provider-Shell-2G/releases).
 
 
 [1]: https://github.com/QualiSystems/cloudshell-shells-documentaion-templates/blob/master/cloudshell_logo.png
