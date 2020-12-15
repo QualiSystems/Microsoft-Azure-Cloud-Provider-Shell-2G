@@ -1,17 +1,9 @@
-#!/usr/bin/env python
-# -*- coding: utf-8 -*-
-
-"""
-Tests for `AzureDriver`
-"""
-
 import unittest
 
-from driver import AzureDriver
+from driver import AzureDriver  # noqa F401
 
 
 class TestAzureDriver(unittest.TestCase):
-
     def setUp(self):
         pass
 
@@ -22,6 +14,7 @@ class TestAzureDriver(unittest.TestCase):
         pass
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import sys
+
     sys.exit(unittest.main())
