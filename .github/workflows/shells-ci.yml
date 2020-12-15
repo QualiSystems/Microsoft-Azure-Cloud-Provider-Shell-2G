@@ -70,7 +70,7 @@ jobs:
           git checkout -qf ${{ github.head_ref }}
           ! diff <(yq .metadata.template_version shell-definition.yaml) <(git show master:shell-definition.yaml > tmp.yaml && yq .metadata.template_version tmp.yaml)
   create-gh-release:
-    needs: [tests, pre-commit, pack]
+    needs: [pre-commit, pack]
     if: ${{ github.ref == 'refs/heads/master' && github.event_name == 'push' }}
     runs-on: ubuntu-latest
     steps:
