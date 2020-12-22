@@ -3,7 +3,7 @@ tosca_definitions_version: tosca_simple_yaml_1_0
 metadata:
   template_name: Microsoft Azure Cloud Provider Shell 2G
   template_author: Quali
-  template_version: 1.1.2
+  template_version: 2.0.0
   template_icon: azure-icon.png
 
 description: >
@@ -54,8 +54,6 @@ node_types:
             type: cloudshell.datatypes.Password
           Management Group Name:
             type: string
-          Execution Server Selector:
-            type: string
           Additional Mgmt Networks:
             type: string
           Private IP Allocation Method:
@@ -95,10 +93,6 @@ node_types:
       Management Group Name:
         type: string
         description: "The name of the Management Resource Group."
-
-      Execution Server Selector:
-        type: string
-        description: "This attribute points to a pre-define group of execution servers. Usually used for different sites or domains."
 
       Additional Mgmt Networks:
         type: string
