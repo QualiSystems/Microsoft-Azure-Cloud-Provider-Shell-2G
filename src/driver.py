@@ -12,6 +12,9 @@ from cloudshell.cp.azure.flows.deploy_vm.deploy_custom_vm import AzureDeployCust
 from cloudshell.cp.azure.flows.deploy_vm.deploy_marketplace_vm import (
     AzureDeployMarketplaceVMFlow,
 )
+from cloudshell.cp.azure.flows.deploy_vm.deploy_shared_gallery_vm import (
+    AzureDeployGalleryImageVMFlow,
+)
 from cloudshell.cp.azure.flows.power_mgmt import AzurePowerManagementFlow
 from cloudshell.cp.azure.flows.prepare_sandbox_infra import AzurePrepareSandboxInfraFlow
 from cloudshell.cp.azure.flows.refresh_ip import AzureRefreshIPFlow
@@ -19,10 +22,12 @@ from cloudshell.cp.azure.flows.vm_details import AzureGetVMDetailsFlow
 from cloudshell.cp.azure.models.deploy_app import (
     AzureVMFromCustomImageDeployApp,
     AzureVMFromMarketplaceDeployApp,
+    AzureVMFromSharedGalleryImageDeployApp,
 )
 from cloudshell.cp.azure.models.deployed_app import (
     AzureVMFromCustomImageDeployedApp,
     AzureVMFromMarketplaceDeployedApp,
+    AzureVMFromSharedGalleryImageDeployedApp,
 )
 from cloudshell.cp.azure.request_actions import CreateRouteTablesRequestActions
 from cloudshell.cp.azure.reservation_info import AzureReservationInfo
@@ -190,6 +195,7 @@ class AzureDriver(ResourceDriverInterface):
             for deploy_app_cls in (
                 AzureVMFromMarketplaceDeployApp,
                 AzureVMFromCustomImageDeployApp,
+                AzureVMFromSharedGalleryImageDeployApp,
             ):
                 DeployVMRequestActions.register_deployment_path(deploy_app_cls)
 
@@ -199,8 +205,12 @@ class AzureDriver(ResourceDriverInterface):
 
             if isinstance(request_actions.deploy_app, AzureVMFromMarketplaceDeployApp):
                 deploy_flow_class = AzureDeployMarketplaceVMFlow
-            else:
+            elif isinstance(
+                request_actions.deploy_app, AzureVMFromCustomImageDeployApp
+            ):
                 deploy_flow_class = AzureDeployCustomVMFlow
+            else:
+                deploy_flow_class = AzureDeployGalleryImageVMFlow
 
             deploy_flow = deploy_flow_class(
                 resource_config=resource_config,
@@ -246,6 +256,7 @@ class AzureDriver(ResourceDriverInterface):
             for deploy_app_cls in (
                 AzureVMFromMarketplaceDeployedApp,
                 AzureVMFromCustomImageDeployedApp,
+                AzureVMFromSharedGalleryImageDeployedApp,
             ):
                 DeployedVMActions.register_deployment_path(deploy_app_cls)
 
@@ -296,6 +307,7 @@ class AzureDriver(ResourceDriverInterface):
             for deploy_app_cls in (
                 AzureVMFromMarketplaceDeployedApp,
                 AzureVMFromCustomImageDeployedApp,
+                AzureVMFromSharedGalleryImageDeployedApp,
             ):
                 DeployedVMActions.register_deployment_path(deploy_app_cls)
 
@@ -355,6 +367,7 @@ class AzureDriver(ResourceDriverInterface):
             for deploy_app_cls in (
                 AzureVMFromMarketplaceDeployedApp,
                 AzureVMFromCustomImageDeployedApp,
+                AzureVMFromSharedGalleryImageDeployedApp,
             ):
                 DeployedVMActions.register_deployment_path(deploy_app_cls)
 
@@ -401,6 +414,7 @@ class AzureDriver(ResourceDriverInterface):
             for deploy_app_cls in (
                 AzureVMFromMarketplaceDeployedApp,
                 AzureVMFromCustomImageDeployedApp,
+                AzureVMFromSharedGalleryImageDeployedApp,
             ):
                 GetVMDetailsRequestActions.register_deployment_path(deploy_app_cls)
 
@@ -460,6 +474,7 @@ class AzureDriver(ResourceDriverInterface):
             for deploy_app_cls in (
                 AzureVMFromMarketplaceDeployedApp,
                 AzureVMFromCustomImageDeployedApp,
+                AzureVMFromSharedGalleryImageDeployedApp,
             ):
                 GetVMDetailsRequestActions.register_deployment_path(deploy_app_cls)
 
@@ -629,6 +644,7 @@ class AzureDriver(ResourceDriverInterface):
             for deploy_app_cls in (
                 AzureVMFromMarketplaceDeployedApp,
                 AzureVMFromCustomImageDeployedApp,
+                AzureVMFromSharedGalleryImageDeployedApp,
             ):
                 DeployedVMActions.register_deployment_path(deploy_app_cls)
 
