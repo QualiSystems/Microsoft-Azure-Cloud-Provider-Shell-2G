@@ -55,6 +55,11 @@ node_types:
         description: "Specifies the size of an empty data disk in gigabytes."
         tags: [user_input]
 
+      Data Disks:
+        type: string
+        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[HDD(default)/SSD]. For example: “disk1:10;disk2:20,SSD;disk3:20,HDD”"
+        tags: [user_input]
+
       Add Public IP:
         type: boolean
         default: false
@@ -146,6 +151,11 @@ node_types:
       Disk Size:
         type: string
         description: "Specifies the size of an empty data disk in gigabytes."
+        tags: [user_input]
+
+      Data Disks:
+        type: string
+        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[HDD(default)/SSD]. For example: “disk1:10;disk2:20,SSD;disk3:20,HDD”"
         tags: [user_input]
 
       Add Public IP:
@@ -254,6 +264,11 @@ node_types:
       Disk Size:
         type: string
         description: "Specifies the size of an empty data disk in gigabytes."
+        tags: [user_input]
+
+      Data Disks:
+        type: string
+        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[HDD(default)/SSD]. For example: “disk1:10;disk2:20,SSD;disk3:20,HDD”"
         tags: [user_input]
 
       Add Public IP:
