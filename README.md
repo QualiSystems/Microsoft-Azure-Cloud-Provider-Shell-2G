@@ -4,9 +4,9 @@
 
 Release date: August 2020
 
-`Shell version: 1.0.0`
+`Shell version: 2.1.0`
 
-`Document version: 1.0`
+`Document version: 2.0`
 
 # In This Guide
 
@@ -177,6 +177,22 @@ In online mode, the execution server automatically downloads and extracts the ap
 
 **To update online Python dependencies:**
 * If there is a live instance of the shell's driver or script, terminate the shell’s instance, as explained [here](http://help.quali.com/Online%20Help/9.0/Portal/Content/CSP/MNG/Mng-Exctn-Srv-Exct.htm#Terminat). If an instance does not exist, the execution server will download the Python dependencies the next time a command of the driver or script runs.
+
+# Typical Workflows
+### Connecting Azure Apps to predefined subnets
+Using the Azure 2nd Gen shell, it is possible to connect Azure Apps to subnets residing in the Sandbox VNet.
+
+__To connect Azure Appss to a predefined subnet:__
+1. Download the _Azure.Subnet.zip_ from the Azure 2nd Gen shell's Integrations [page](https://community.quali.com/repos/5247/azure-cloud-provider-shell-2g).
+2. Import the ZIP file into CloudShell Portal.
+3. Open the blueprint or sandbox.
+4. From the __App / Service__ pane, drag the new __Azure Subnet__ service into the diagram.
+5. Set the following details on the service:
+   - __Public__: Subnet's privacy policy - __Public__ to enable connections to the subnet's VMs from outside the subnet or __Private__. 
+   - __Subnet Name__: The name of the subnet, as displayed in the __Subnets__ blade on Azure.
+6. Click __Add__.
+7. Deploy the connection(s), as appropriate.
+<br>The connection is created like with any other VLAN service. This includes by deploying the App, connecting the purple Connector line if the App is already deployed, and reserving the blueprint.
 
 # References
 To download and share integrations, see [Quali Community's Integrations](https://community.quali.com/integrations). 
