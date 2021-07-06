@@ -14,6 +14,7 @@ Release date: August 2020
 * [Downloading the Shell](#downloading-the-shell)
 * [Importing and Configuring the Shell](#importing-and-configuring-the-shell)
 * [Updating Python Dependencies for Shells](#updating-python-dependencies-for-shells)
+* [Typical Workflows](#typical-workflows)
 * [References](#references)
 * [Release Notes](#release-notes)
 
@@ -182,7 +183,7 @@ In online mode, the execution server automatically downloads and extracts the ap
 ### Connecting Azure Apps to predefined subnets
 Using the Azure 2nd Gen shell, it is possible to connect Azure Apps to subnets residing in the Sandbox VNet.
 
-__To connect Azure Appss to a predefined subnet:__
+__To connect Azure Apps to a predefined subnet:__
 1. Download the _Azure.Subnet.zip_ from the Azure 2nd Gen shell's Integrations [page](https://community.quali.com/repos/5247/azure-cloud-provider-shell-2g).
 2. Import the ZIP file into CloudShell Portal.
 3. Open the blueprint or sandbox.
