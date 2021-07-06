@@ -155,7 +155,6 @@ You can also modify existing resources, see [Managing Resources in the Inventory
         - **VM Size** - Paste here default VM Size for the VMs
         - **Region** - Paste here the public cloud region to be used
         - **Management Group Name** - Paste here the name of the Management Resource Group
-  
   6. Click **Continue**.
 
 CloudShell validates provided settings and creates the new resource.
