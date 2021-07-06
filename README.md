@@ -14,7 +14,6 @@ Release date: August 2020
 * [Downloading the Shell](#downloading-the-shell)
 * [Importing and Configuring the Shell](#importing-and-configuring-the-shell)
 * [Updating Python Dependencies for Shells](#updating-python-dependencies-for-shells)
-* [Typical Workflows](#typical-workflows)
 * [References](#references)
 * [Release Notes](#release-notes)
 
@@ -76,6 +75,8 @@ For detailed information on each available commands, see the following section o
 
 [Common Cloud Provider Commands](https://github.com/QualiSystems/cloudshell-standards/blob/master/Documentation/cloud_provider_standard.md#commands)
 
+# Azure Integration Process
+In order to integrate CloudShell with Azure, you need to first deploy the CloudShell management and sandbox VNets on your Azure region. This is done using Azure templates that define the management and sandbox VNets, the connection to your Quali Server and more. Additional steps are required, such as configuring the integration's management VMs and creating App templates which include the definition of the VMs, images and configuration management to be performed on the deployed VMs. For details, see CloudShell Help's [Azure Integration](https://help.quali.com/Online%20Help/2021.2/portal/Content/Admn/Azure-VNET-Ovrv.htm) chapter.
 
 # Downloading the Shell
 The Microsoft Azure Cloud Provider Shell 2G shell is available from the [Quali Community Integrations](https://community.quali.com/integrations) page. 
@@ -176,29 +177,6 @@ In online mode, the execution server automatically downloads and extracts the ap
 
 **To update online Python dependencies:**
 * If there is a live instance of the shell's driver or script, terminate the shell’s instance, as explained [here](http://help.quali.com/Online%20Help/9.0/Portal/Content/CSP/MNG/Mng-Exctn-Srv-Exct.htm#Terminat). If an instance does not exist, the execution server will download the Python dependencies the next time a command of the driver or script runs.
-
-# Typical Workflows
-
-**Workflow 1 - _Create App Template_**
-1. Log into CloudShell Portal as administrator.
-
-2. Click __Manage > Apps__ and add a new App template.
-
-3. Select the appropriate deployment type.<br><br>Note that this shell's deployment types all end with "2nd Gen" to indicate that they belong to a 2nd Gen shell. For example: "Azure VM from Custom Image 2nd Gen".
-
-4. Sepecify a __Name__ and click __Create__.
-
-6. In the __General__ tab, select the appropriate domain categories.<br><br>A domain category is a service category that is used to expose the App to specific CloudShell domains. By default, the __Applications__ category is associated to the Global domain. You can optionally create additional service categories for other domains or add the desired domains to the __Applications__ category. Service categories are managed in the __Manage>Categories>Service Categories__ page.
-
-7. Configure the App's __Deployment Path__ - select the cloud provider resource and fill in the settings.<br><br>See the attribute tooltips for details.
-
-8. In the __Configuration Management__ tab, specify the configuration management script or Ansible playbook to run on the VM.
-
-9. In the __App Resource__ tab, optionally select the shell that defines the deployed App's behavior in CloudShell (e.g. which automation commands it includes). <br><br>You can also specify the deployed App's __Username__ and __Password__. CloudShell will set these credentials during the VM's deployment.
-
-10. You can add additional deployment paths by clicking the link in the bottom left corner of the dialog box.
-
-11. Click __Done__.
 
 # References
 To download and share integrations, see [Quali Community's Integrations](https://community.quali.com/integrations). 
