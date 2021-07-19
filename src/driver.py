@@ -17,6 +17,7 @@ from cloudshell.cp.azure.flows.deploy_vm.deploy_shared_gallery_vm import (
 )
 from cloudshell.cp.azure.flows.power_mgmt import AzurePowerManagementFlow
 from cloudshell.cp.azure.flows.prepare_sandbox_infra import AzurePrepareSandboxInfraFlow
+from cloudshell.cp.azure.flows.reconfigure_vm import AzureReconfigureVMFlow
 from cloudshell.cp.azure.flows.refresh_ip import AzureRefreshIPFlow
 from cloudshell.cp.azure.flows.vm_details import AzureGetVMDetailsFlow
 from cloudshell.cp.azure.models.deploy_app import (
@@ -387,6 +388,66 @@ class AzureDriver(ResourceDriverInterface):
 
             return refresh_ip_flow.refresh_ip(
                 deployed_app=deployed_vm_actions.deployed_app
+            )
+
+    def reconfigure_vm(
+        self,
+        context,
+        ports,
+        cancellation_context,
+        vm_size,
+        os_disk_size,
+        os_disk_type,
+        data_disks,
+    ):
+        """Reconfigure VM Size and Data Disks."""
+        with LoggingSessionContext(context) as logger:
+            logger.info("Starting Reconfigure VM command...")
+            api = CloudShellSessionContext(context).get_api()
+            resource_config = AzureResourceConfig.from_context(
+                shell_name=self.SHELL_NAME, context=context, api=api
+            )
+
+            reservation_info = AzureReservationInfo.from_remote_resource_context(
+                context
+            )
+            cancellation_manager = CancellationContextManager(cancellation_context)
+
+            azure_client = AzureAPIClient(
+                azure_subscription_id=resource_config.azure_subscription_id,
+                azure_tenant_id=resource_config.azure_tenant_id,
+                azure_application_id=resource_config.azure_application_id,
+                azure_application_key=resource_config.azure_application_key,
+                logger=logger,
+            )
+
+            for deployed_app_cls in (
+                AzureVMFromMarketplaceDeployedApp,
+                AzureVMFromCustomImageDeployedApp,
+                AzureVMFromSharedGalleryImageDeployedApp,
+            ):
+                DeployedVMActions.register_deployment_path(deployed_app_cls)
+
+            resource = context.remote_endpoints[0]
+            deployed_vm_actions = DeployedVMActions.from_remote_resource(
+                resource=resource, cs_api=api
+            )
+
+            reconfigure_vm_flow = AzureReconfigureVMFlow(
+                resource_config=resource_config,
+                azure_client=azure_client,
+                cs_api=api,
+                reservation_info=reservation_info,
+                cancellation_manager=cancellation_manager,
+                logger=logger,
+            )
+
+            return reconfigure_vm_flow.reconfigure(
+                deployed_app=deployed_vm_actions.deployed_app,
+                vm_size=vm_size,
+                os_disk_size=os_disk_size,
+                os_disk_type=os_disk_type,
+                data_disks=data_disks,
             )
 
     def GetVmDetails(self, context, requests, cancellation_context):
