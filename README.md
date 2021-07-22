@@ -88,8 +88,9 @@ The shell comprises:
 
 |File name|Description|
 |:---|:---|
-|Microsoft Azure Cloud Provider Shell 2G.zip|Device shell package|
-|cloudshell-azure-dependencies-package-1.0.x.zip|Shell Python dependencies (for offline deployments only)|
+|Microsoft.Azure.Cloud.Provider.Shell.2G.zip|Device shell package|
+|cloudshell-Microsoft-Azure-Cloud-Provider-Shell-2G-dependencies-win32-package-2.1.0.zip,cloudshell-Microsoft-Azure-Cloud-Provider-Shell-2G-dependencies-linux-package-2.1.0.zip|Shell Python dependencies (for offline deployments only)|
+|Azure.Subnet.zip|Service package for connecting to predefined subnets|
 
 # Importing and Configuring the Shell
 This section describes how to import the Microsoft Azure Cloud Provider Shell 2G shell and configure and modify the shell’s devices.
