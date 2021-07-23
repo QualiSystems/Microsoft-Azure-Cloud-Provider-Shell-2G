@@ -44,10 +44,10 @@ node_types:
 
       Disk Type:
         type: string
-        description: "Type of disk to use (HDD / SSD). Default is HDD"
-        default: HDD
+        description: "Type of disk to use. Default is “Standard HDD”."
+        default: Standard HDD
         constraints:
-          - valid_values: [HDD, SSD]
+          - valid_values: [Standard HDD, Standard SSD, Premium SSD, Standard SSD (zone-redundant storage), Premium SSD (zone-redundant storage)]
         tags: [user_input]
 
       Disk Size:
@@ -57,7 +57,7 @@ node_types:
 
       Data Disks:
         type: string
-        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[HDD(default)/SSD]. For example: “disk1:10;disk2:20,SSD;disk3:20,HDD”"
+        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage)]. For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
         tags: [user_input]
 
       Add Public IP:
@@ -142,10 +142,10 @@ node_types:
 
       Disk Type:
         type: string
-        description: "Type of disk to use (HDD / SSD). Default is HDD"
-        default: HDD
+        description: "Type of disk to use. Default is “Standard HDD”."
+        default: Standard HDD
         constraints:
-          - valid_values: [HDD, SSD]
+          - valid_values: [Standard HDD, Standard SSD, Premium SSD, Standard SSD (zone-redundant storage), Premium SSD (zone-redundant storage)]
         tags: [user_input]
 
       Disk Size:
@@ -155,7 +155,7 @@ node_types:
 
       Data Disks:
         type: string
-        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[HDD(default)/SSD]. For example: “disk1:10;disk2:20,SSD;disk3:20,HDD”"
+        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage)]. For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
         tags: [user_input]
 
       Add Public IP:
@@ -255,10 +255,10 @@ node_types:
 
       Disk Type:
         type: string
-        description: "Type of disk to use (HDD / SSD). Default is HDD"
-        default: HDD
+        description: "Type of disk to use. Default is “Standard HDD”."
+        default: Standard HDD
         constraints:
-          - valid_values: [HDD, SSD]
+          - valid_values: [Standard HDD, Standard SSD, Premium SSD, Standard SSD (zone-redundant storage), Premium SSD (zone-redundant storage)]
         tags: [user_input]
 
       Disk Size:
@@ -268,7 +268,7 @@ node_types:
 
       Data Disks:
         type: string
-        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[HDD(default)/SSD]. For example: “disk1:10;disk2:20,SSD;disk3:20,HDD”"
+        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage)]. For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
         tags: [user_input]
 
       Add Public IP:
