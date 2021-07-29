@@ -54,6 +54,10 @@ node_types:
             type: cloudshell.datatypes.Password
           Management Group Name:
             type: string
+          Sandbox Virtual Network Name:
+            type: string
+          Management Virtual Network Name:
+            type: string
           Additional Mgmt Networks:
             type: string
           Private IP Allocation Method:
@@ -93,6 +97,14 @@ node_types:
       Management Group Name:
         type: string
         description: "The name of the Management Resource Group."
+
+      Sandbox Virtual Network Name:
+        type: string
+        description: "The name of the Sandbox Virtual Network under the Resource Group."
+
+      Management Virtual Network Name:
+        type: string
+        description: "The name of the Management Virtual Network under the Resource Group."
 
       Additional Mgmt Networks:
         type: string
