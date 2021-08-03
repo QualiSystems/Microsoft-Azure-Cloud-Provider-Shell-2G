@@ -60,6 +60,11 @@ node_types:
         description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage)]. For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
         tags: [user_input]
 
+      Resource Group Name:
+        type: string
+        description: "The name of the Resource Group where the VM will be deployed."
+        tags: [user_input]
+
       Add Public IP:
         type: boolean
         default: false
@@ -156,6 +161,11 @@ node_types:
       Data Disks:
         type: string
         description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage)]. For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
+        tags: [user_input]
+
+      Resource Group Name:
+        type: string
+        description: "The name of the Resource Group where the VM will be deployed."
         tags: [user_input]
 
       Add Public IP:
@@ -269,6 +279,11 @@ node_types:
       Data Disks:
         type: string
         description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage)]. For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
+        tags: [user_input]
+
+      Resource Group Name:
+        type: string
+        description: "The name of the Resource Group where the VM will be deployed."
         tags: [user_input]
 
       Add Public IP:
