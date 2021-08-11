@@ -58,15 +58,20 @@ The following table describes attributes that are unique to this shell and are n
 
 |Attribute Name|Data Type|Description|
 |:---|:---|:---|
+|Region|String|The Azure region to be used by this cloud provider resource. For example, "East US".|
 |VM Size|String|The Microsoft Azure VM Size. The VM Size determines the CPU, memory, disk size and networking capacity of the VM. For example: “Standard_A1_v2”|
+|Networks in Use|String|Comma-separated list of CIDRs to be excluded when allocating sandbox networks. The value must include at least the CloudShell Management VNet. For example, 10.0.0.0/24,10.1.0.0/16,172.31.0.0/24|
 |Azure Subscription ID|String|The Subscription ID of the Azure user|
 |Azure Tenant ID|String|The Azure Tenant Id that is associated with your Azure Active Directory (AAD) instance. For example: ccd13026-98e3-4e90-01f4-28e2afdf3213. The Tenant ID is created for the Active Directory and can be retrieved when creating the Azure API web application or retrieved from Azure CLI|
 |Azure Application ID|String|Application Id associated with the Azure API application. The application ID allows CloudShell to access the Azure API and is generated as part of the web application’s configuration process|
 |Azure Application Key|Password|Application key associated with the Azure API application. The application key allows CloudShell to access the Azure API and is generated as part of the Azure application’s configuration process|
 |Management Group Name|String|The name of the Management Resource Group|
+|Sandbox Virtual Network Name|String|Sandbox VNet name. VNet in which the sandbox subnets will reside. *__Notes__:In dedicated mode, the sandbox subnet will be created in this VNet. In predefined mode, you must make sure the subnet to be used is located within this VNet.*|
+|Management Virtual Network Name|String|(Optional) Management VNet name. Used to store management network security rules|
 |Additional Mgmt Networks|String|Networks to be allowed to interact with all sandboxes. This is used for allowing connectivity to Azure resources outside the CloudShell Management VNet that should be available to CloudShell sandboxes. The syntax is comma separated CIDRs.|
 |Custom Tags|string|Semi-colon separated list of up to 9 tags to be applied to all related Azure objects created during the App deployment, such as the sandbox's resource group, VNETs, subnets, NSGs and VMs. Attribute supports the following syntax: [TagName]=[TagValue]; [TagName]=[TagValue]. For example: “Tag1=Val1;Tag2=Val2”.|
 |Private IP Allocation Method|String|Defines the method that will be used to allocated private IP addresses to VMs. When Cloudshell Allocation method is selected the Azure-Shell will use the CloudShell Pool API to checkout the next available IP address when needed. When the instance is deleted the checked out IP addresses will be released. When Azure Allocation method is selected the private ips will be assigned by Azure when creating the network interface.|
+|Execution Server Selector|String|This attribute points to a pre-defined group of execution servers (grouped by a common Execution Server Selector value). To make the association, enter the same value you specified on the execution server.|
 
 
 ### Automation
@@ -150,12 +155,13 @@ You can also modify existing resources, see [Managing Resources in the Inventory
   4. Click **Create**.
   
   5. In the **Resource** dialog box, enter the following mandatory attributes with data from step 1:
+        - **Region** - Paste here the public cloud region to be used
         - **Azure Application ID** - Paste here your Azure Application ID
         - **Azure Application Key** - Paste here your Azure Application Key
         - **Azure Subscription ID** - Paste here your Azure Subscription ID
         - **Azure Tenant ID** - Paste here your Azure Tenant ID
         - **VM Size** - Paste here default VM Size for the VMs
-        - **Region** - Paste here the public cloud region to be used
+        - **Sandbox Virtual Network Name** - VNet in which the sandbox subnets will reside.
         - **Management Group Name** - Paste here the name of the Management Resource Group
   6. Click **Continue**.
 
