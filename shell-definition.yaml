@@ -100,7 +100,7 @@ node_types:
 
       Sandbox Virtual Network Name:
         type: string
-        description: "The name of the Sandbox Virtual Network under the Resource Group."
+        description: "The name of the Sandbox Virtual Network under the Resource Group. In dedicated mode, the sandbox subnet will be created in this VNet. In predefined mode, make sure the subnet to be used is located within this VNet."
 
       Management Virtual Network Name:
         type: string
