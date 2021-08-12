@@ -57,7 +57,7 @@ node_types:
 
       Data Disks:
         type: string
-        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage)]. For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
+        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is: disk_name:disk_size,disk_type. Supported disk types are Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage). For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
         tags: [user_input]
 
       Resource Group Name:
@@ -160,7 +160,7 @@ node_types:
 
       Data Disks:
         type: string
-        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage)]. For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
+        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is: disk_name:disk_size,disk_type. Supported disk types are Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage). For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
         tags: [user_input]
 
       Resource Group Name:
@@ -278,7 +278,7 @@ node_types:
 
       Data Disks:
         type: string
-        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is disk_name:disk_size,disk_type[Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage)]. For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
+        description: "Semi-colon separated list of data disks that will be added to the VM. The syntax is: disk_name:disk_size,disk_type. Supported disk types are Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage). For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”"
         tags: [user_input]
 
       Resource Group Name:

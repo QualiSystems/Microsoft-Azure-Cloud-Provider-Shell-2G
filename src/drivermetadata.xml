@@ -29,7 +29,7 @@
                     <Parameter DisplayName="VM Size" Name="vm_size" Type="String" Description="The Microsoft Azure VM Size. The VM Size determines the CPU, memory, disk size and networking capacity of the VM. For example: “Standard_A1_v2”." />
                     <Parameter DisplayName="OS Disk Size" Name="os_disk_size" Type="String" Description="Specifies the size of the OS disk in gigabytes." />
                     <Parameter DisplayName="OS Disk Type" Name="os_disk_type" Type="String" Description="Specifies the type of the OS disk (HDD/SSD)." />
-                    <Parameter DisplayName="Data Disks" Name="data_disks" Type="String" Description="Allows to add/edit data disk size by their disk name. The syntax is disk_name:disk_size,disk_type[HDD(default)/SSD]. For example: “disk1:10;disk2:20,SSD;disk3:20,HDD" />
+                    <Parameter DisplayName="Data Disks" Name="data_disks" Type="String" Description="Allows to add/edit data disk size by their disk name. The syntax is: disk_name:disk_size,disk_type. Supported disk types are Standard HDD(default)/Standard SSD/Premium SSD/Ultra SSD/Standard SSD (zone-redundant storage)/Premium SSD (zone-redundant storage). For example: “disk1:10;disk2:20,Premium SSD;disk3:20,Standard SSD (zone-redundant storage)”" />
                 </Parameters>
             </Command>
         </Category>
