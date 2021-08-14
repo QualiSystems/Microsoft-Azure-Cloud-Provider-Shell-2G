@@ -226,6 +226,13 @@ class AzureDriver(ResourceDriverInterface):
 
             return deploy_flow.deploy(request_actions=request_actions)
 
+    def PowerOnHidden(self, context, ports):
+        self.PowerOn(context, ports)
+        # set live status on deployed app if power on passed
+        api = CloudShellSessionContext(context).get_api()
+        resource = context.remote_endpoints[0]
+        api.SetResourceLiveStatus(resource.fullname, "Online", "Active")
+
     def PowerOn(self, context, ports):
         """Called when reserving a sandbox during setup.
 

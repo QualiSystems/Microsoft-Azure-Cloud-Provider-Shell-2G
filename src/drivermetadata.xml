@@ -16,6 +16,7 @@
             <Command Description="" DisplayName="Set App Security Groups" Name="SetAppSecurityGroups" Tags="allow_unreserved" />
             <Command Description="" DisplayName="Get VmDetails" EnableCancellation="true" Name="GetVmDetails" Tags="allow_unreserved" />
             <Command Description="" DisplayName="Create Routetables" EnableCancellation="false" Name="CreateRouteTables" Tags="allow_unreserved" />
+            <Command Description="" DisplayName="Power On Hidden" Name="PowerOnHidden" Tags="remote_hidden_power_on,allow_shared" />
         </Category>
 
         <Category Name="Power">
