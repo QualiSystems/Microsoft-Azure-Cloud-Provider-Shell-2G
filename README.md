@@ -26,7 +26,13 @@ A shell integrates a device model, application or other technology with CloudShe
 CloudShell Cloud Providers shells provide L2 or L3 connectivity between resources and/or Apps.
 
 ### Microsoft Azure Cloud Provider Shell 2G
-Microsoft Azure Cloud Provider Shell 2G provides you with apps deployment and management capabilities. 
+Microsoft Azure Cloud Provider Shell 2G provides you with apps deployment and management capabilities. These include:
+* Python 3.7 support
+* Deployment of Azure Apps to predefined subnets in the Sandbox VNet
+* Deploying from Azure image galleries
+* Option to set custom tags on Azure resources created as part of CloudShell sandboxes
+
+For details, see the [Add an Azure Cloud Provider Resource](https://help.quali.com/Online%20Help/0.0/Portal/Content/Admn/Azure-Cld-Prvdr-Rsc.htm) CloudShell Help article.
 
 For more information on the device, see the vendor's official product documentation.
 
