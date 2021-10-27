@@ -61,3 +61,5 @@ cloudshell_config.yml
 
 # Test file
 src/check_azure.py
+/venv
+/.idea
