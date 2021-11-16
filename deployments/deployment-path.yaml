@@ -75,7 +75,7 @@ node_types:
 
       Boot Diagnostics Storage Account:
         type: string
-        description: "The name of a storage account where boot diagnostic artifacts will be stored"
+        description: "The name of a storage account where boot diagnostic artifacts will be stored. Specify 'Sandbox Storage' to use storage account created by the sandbox."
         tags: [user_input]
 
       Resource Group Name:
@@ -196,7 +196,7 @@ node_types:
 
       Boot Diagnostics Storage Account:
         type: string
-        description: "The name of a storage account where boot diagnostic artifacts will be stored"
+        description: "The name of a storage account where boot diagnostic artifacts will be stored. Specify 'Sandbox Storage' to use storage account created by the sandbox."
         tags: [user_input]
 
       Resource Group Name:
@@ -332,7 +332,7 @@ node_types:
 
       Boot Diagnostics Storage Account:
         type: string
-        description: "The name of a storage account where boot diagnostic artifacts will be stored. Type Sandbox Storage to use storage account created for the sandbox."
+        description: "The name of a storage account where boot diagnostic artifacts will be stored. Specify 'Sandbox Storage' to use storage account created by the sandbox."
         tags: [user_input]
 
       Resource Group Name:
