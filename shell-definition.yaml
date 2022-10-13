@@ -3,7 +3,7 @@ tosca_definitions_version: tosca_simple_yaml_1_0
 metadata:
   template_name: Microsoft Azure Cloud Provider Shell 2G
   template_author: Quali
-  template_version: 2.4.1
+  template_version: 2.5.0
   template_icon: azure-icon.png
 
 description: >
@@ -65,6 +65,10 @@ node_types:
             default: "Azure Allocation"
           Custom Tags:
             type: string
+          Availability Zones:
+            type: string
+          Key Vault:
+            type: string
     properties:
       Region:
         type: string
@@ -119,6 +123,14 @@ node_types:
         description: "Defines the method that will be used to allocated private ip addresses to VMs. When Cloudshell Allocation method is selected the Azure-Shell will use the CloudShell Pool API to checkout the next available ip address when needed. When the instance is deleted the checked out ip addresses will be released. When Azure Allocation method is selected the private ips will be assigned by Azure when creating the network interface."
         constraints:
           - valid_values: ["Azure Allocation", "Cloudshell Allocation"]
+
+      Availability Zones:
+        type: string
+        description: "Azure availability zones are physically separate locations within each Azure region that are tolerant to local failures."
+
+      Key Vault:
+        type: string
+        description: "Azure Key Vault is a cloud service for securely storing and accessing secrets."
 
     artifacts:
       icon:
