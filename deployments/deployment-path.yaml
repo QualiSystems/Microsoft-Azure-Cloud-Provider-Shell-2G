@@ -114,7 +114,7 @@ node_types:
       Public IP Type:
         type: string
         default: Dynamic
-        description: "Static Public IP Type ensures that the VM always uses the same public IP. By default, Public IPs are dynamic and their address may change when the VM is powered off."
+        description: "Static Public IP Type ensures that the VM always uses the same public IP. By default, Public IPs are dynamic and their address may change when the VM is powered off. Ignored when using availability zones."
         constraints:
           - valid_values: [Static, Dynamic]
         tags: [user_input]
@@ -253,7 +253,7 @@ node_types:
       Public IP Type:
         type: string
         default: Dynamic
-        description: "Static Public IP Type ensures that the VM always uses the same public IP. By default, Public IPs are dynamic and their address may change when the VM is powered off."
+        description: "Static Public IP Type ensures that the VM always uses the same public IP. By default, Public IPs are dynamic and their address may change when the VM is powered off. Ignored when using availability zones."
         constraints:
           - valid_values: [Static, Dynamic]
         tags: [user_input]
@@ -407,7 +407,7 @@ node_types:
       Public IP Type:
         type: string
         default: Dynamic
-        description: "Static Public IP Type ensures that the VM always uses the same public IP. By default, Public IPs are dynamic and their address may change when the VM is powered off."
+        description: "Static Public IP Type ensures that the VM always uses the same public IP. By default, Public IPs are dynamic and their address may change when the VM is powered off. Ignored when using availability zones."
         constraints:
           - valid_values: [Static, Dynamic]
         tags: [user_input]
