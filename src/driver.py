@@ -1,3 +1,16 @@
+from cloudshell.cp.core.cancellation_manager import CancellationContextManager
+from cloudshell.cp.core.request_actions import (
+    CleanupSandboxInfraRequestActions,
+    DeployedVMActions,
+    DeployVMRequestActions,
+    GetVMDetailsRequestActions,
+    PrepareSandboxInfraRequestActions,
+    SetAppSecurityGroupsRequestActions,
+)
+from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
+from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
+from cloudshell.shell.core.session.logging_session import LoggingSessionContext
+
 from cloudshell.cp.azure import constants
 from cloudshell.cp.azure.azure_client import AzureAPIClient
 from cloudshell.cp.azure.flows.access_key import AzureGetAccessKeyFlow
@@ -35,18 +48,6 @@ from cloudshell.cp.azure.reservation_info import AzureReservationInfo
 from cloudshell.cp.azure.resource_config import AzureResourceConfig
 from cloudshell.cp.azure.utils.cs_ip_pool_manager import CSIPPoolManager
 from cloudshell.cp.azure.utils.lock_manager import ThreadLockManager
-from cloudshell.cp.core.cancellation_manager import CancellationContextManager
-from cloudshell.cp.core.request_actions import (
-    CleanupSandboxInfraRequestActions,
-    DeployedVMActions,
-    DeployVMRequestActions,
-    GetVMDetailsRequestActions,
-    PrepareSandboxInfraRequestActions,
-    SetAppSecurityGroupsRequestActions,
-)
-from cloudshell.shell.core.resource_driver_interface import ResourceDriverInterface
-from cloudshell.shell.core.session.cloudshell_session import CloudShellSessionContext
-from cloudshell.shell.core.session.logging_session import LoggingSessionContext
 
 
 class AzureDriver(ResourceDriverInterface):
