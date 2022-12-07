@@ -17,6 +17,14 @@
             <Command Description="" DisplayName="Get VmDetails" EnableCancellation="true" Name="GetVmDetails" Tags="allow_unreserved" />
             <Command Description="" DisplayName="Create Routetables" EnableCancellation="false" Name="CreateRouteTables" Tags="allow_unreserved" />
             <Command Description="" DisplayName="Power On Hidden" Name="PowerOnHidden" Tags="remote_hidden_power_on,allow_shared" />
+            <Command DisplayName="Get VMs Paths" Name="get_vms" Tags="allow_unreserved" />
+            <Command DisplayName="Get Autoload Details for VM" Name="get_autoload_details_for_vm" Tags="allow_unreserved">
+                <Parameters>
+                    <Parameter DisplayName="VM path" Name="vm_path" Type="String" Description="Full VM path: Resource Group / VM Name"/>
+                    <Parameter DisplayName="Model" Name="model" Type="String" />
+                    <Parameter DisplayName="Port model" Name="port_model" Type="String" />
+                </Parameters>
+            </Command>
         </Category>
 
         <Category Name="Power">

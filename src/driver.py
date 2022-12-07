@@ -49,6 +49,36 @@ from cloudshell.cp.azure.resource_config import AzureResourceConfig
 from cloudshell.cp.azure.utils.cs_ip_pool_manager import CSIPPoolManager
 from cloudshell.cp.azure.utils.lock_manager import ThreadLockManager
 
+import re
+import json
+import jsonpickle
+
+from cloudshell.cp.azure.actions.vm import VMActions
+from cloudshell.cp.azure.actions.vm_details import VMDetailsActions
+from cloudshell.cp.azure.utils.azure_name_parser import get_name_from_resource_id
+
+from cloudshell.cp.core.request_actions.models import (
+    VmDetailsData,
+    VmDetailsNetworkInterface,
+    VmDetailsProperty,
+)
+
+from cloudshell.cp.core.request_actions.models import DeployedApp
+from cloudshell.cp.core.request_actions.models import VmDetailsData
+from cloudshell.shell.core.driver_context import (
+    ApiVmCustomParam,
+    ApiVmDetails,
+    AutoLoadAttribute,
+    AutoLoadCommandContext,
+    AutoLoadDetails,
+    AutoLoadResource,
+    CancellationContext,
+    InitCommandContext,
+    ResourceCommandContext,
+    ResourceRemoteCommandContext,
+    UnreservedResourceCommandContext,
+)
+
 
 class AzureDriver(ResourceDriverInterface):
     SHELL_NAME = constants.SHELL_NAME
@@ -502,7 +532,7 @@ class AzureDriver(ResourceDriverInterface):
                 logger=logger,
             )
 
-            vm_details_flow = AzureGetVMDetailsFlow(
+            vm_details_flow = StaticGetVmDetailsFlow(
                 resource_config=resource_config,
                 azure_client=azure_client,
                 reservation_info=reservation_info,
@@ -794,3 +824,239 @@ class AzureDriver(ResourceDriverInterface):
             return get_available_ip_flow.get_available_private_ip(
                 subnet_cidr=subnet_cidr, owner=owner
             )
+
+    def get_vms(self, context: ResourceCommandContext) -> str:
+        with LoggingSessionContext(context) as logger:
+            logger.info("Starting Get VMs command")
+            api = CloudShellSessionContext(context).get_api()
+            resource_config = AzureResourceConfig.from_context(
+                shell_name=self.SHELL_NAME, context=context, api=api
+            )
+
+            azure_client = AzureAPIClient(
+                azure_subscription_id=resource_config.azure_subscription_id,
+                azure_tenant_id=resource_config.azure_tenant_id,
+                azure_application_id=resource_config.azure_application_id,
+                azure_application_key=resource_config.azure_application_key,
+                logger=logger,
+            )
+
+            res_groups_mapping = {rg.name.upper(): rg.name for rg in
+                                  azure_client._resource_client.resource_groups.list()}
+
+            vms = []  # list[dict["path": resource_group/vm_name, "uuid": vm_id]]
+
+            for vm in azure_client._compute_client.virtual_machines.list_all():
+                match = re.search(r"resourceGroups/(?P<rg_name>\S+?)/.*",
+                                  vm.id,
+                                  re.IGNORECASE)
+                if match:
+                    vm_res_group = res_groups_mapping.get(match.group("rg_name"))
+                    path = f"{vm_res_group}/{vm.name}"
+                else:
+                    path = vm.name
+
+                vms.append({"path": path, "uuid": vm.vm_id})
+
+            vms.sort(key=lambda vm: vm["path"].lower())
+            return json.dumps(vms)
+
+    def get_autoload_details_for_vm(
+        self,
+        context: ResourceCommandContext,
+        vm_path: str,
+        model: str,
+        port_model: str,
+    ) -> str:
+        with LoggingSessionContext(context) as logger:
+            logger.info("Starting Get Autoload Details For VM command")
+            api = CloudShellSessionContext(context).get_api()
+            resource_config = AzureResourceConfig.from_context(
+                shell_name=self.SHELL_NAME, context=context, api=api
+            )
+
+            azure_client = AzureAPIClient(
+                azure_subscription_id=resource_config.azure_subscription_id,
+                azure_tenant_id=resource_config.azure_tenant_id,
+                azure_application_id=resource_config.azure_application_id,
+                azure_application_key=resource_config.azure_application_key,
+                logger=logger,
+            )
+
+            resource_group_name, vm_name = vm_path.split("/")
+            vm = azure_client.get_vm(
+                resource_group_name=resource_group_name,
+                vm_name=vm_name
+            )
+
+            actions = StaticVmDetailsActions(azure_client=azure_client, logger=logger)
+
+            vm_details = actions._prepare_vm_details(
+                virtual_machine=vm,
+                resource_group_name=resource_group_name,
+                prepare_vm_instance_data_function=actions._prepare_common_vm_instance_data
+            )
+
+            autoload_details = self._get_autoload_details(
+                vm,
+                model,
+                port_model,
+                vm_details,
+                resource_config,
+            )
+
+            return jsonpickle.encode(autoload_details)
+
+    def _get_autoload_details(
+        self,
+        vm,
+        model: str,
+        port_model: str,
+        vm_details: VmDetailsData,
+        resource_config: AzureResourceConfig,
+    ) -> AutoLoadDetails:
+        resources = []
+
+        vm_custom_params = [
+            ApiVmCustomParam(data.key, data.value) for data in vm_details.vmInstanceData
+        ]
+        api_vm_details = ApiVmDetails(resource_config.name, vm.vm_id, vm_custom_params)
+        os_type = ""
+        for prop in vm_details.vmInstanceData:
+            if prop.key == "Operating System":
+                os_type = prop.value
+                break
+
+        attributes = [
+            AutoLoadAttribute("", f"{model}.OS Type", os_type),
+            AutoLoadAttribute(
+                "", "VmDetails", jsonpickle.encode(api_vm_details, unpicklable=False)
+            ),
+        ]
+
+        # ports resources and attributes
+        for iface_index, vnic in enumerate(vm_details.vmNetworkData, start=1):
+            rel_path = f"P{iface_index}"
+            res = AutoLoadResource(
+                name=f"Port{iface_index}",
+                model=port_model,
+                relative_address=rel_path,
+            )
+            resources.append(res)
+            attributes.append(
+                AutoLoadAttribute(
+                    rel_path, f"{port_model}.Requested vNIC Name", iface_index
+                )
+            )
+            attr_mapping = {
+                "IP": "IPv4 Address",
+                "MAC Address": "MAC Address",
+            }
+
+            for prop in vnic.networkData:
+                if prop.key in attr_mapping:
+                    attributes.append(
+                        AutoLoadAttribute(
+                            rel_path,
+                            f"{port_model}.{attr_mapping[prop.key]}",
+                            prop.value
+                        )
+                    )
+
+        return AutoLoadDetails(resources, attributes)
+
+
+class StaticGetVmDetailsFlow(AzureGetVMDetailsFlow):
+    def _get_vm_details(self, deployed_app):
+        """Get VM Details."""
+        sandbox_resource_group_name = self._reservation_info.get_resource_group_name()
+        vm_resource_group_name = (
+            deployed_app.resource_group_name or sandbox_resource_group_name
+        )
+
+        vm_actions = VMActions(azure_client=self._azure_client, logger=self._logger)
+        vm_details_actions = StaticVmDetailsActions(
+            azure_client=self._azure_client, logger=self._logger
+        )
+
+        with self._cancellation_manager:
+            vm = vm_actions.get_vm(
+                vm_name=deployed_app.name, resource_group_name=vm_resource_group_name
+            )
+
+        if isinstance(deployed_app, AzureVMFromMarketplaceDeployedApp):
+            return vm_details_actions.prepare_marketplace_vm_details(
+                virtual_machine=vm, resource_group_name=vm_resource_group_name
+            )
+        elif isinstance(deployed_app, AzureVMFromSharedGalleryImageDeployedApp):
+            return vm_details_actions.prepare_shared_gallery_vm_details(
+                virtual_machine=vm, resource_group_name=vm_resource_group_name
+            )
+        elif isinstance(deployed_app, AzureVMFromCustomImageDeployedApp):
+            return vm_details_actions.prepare_custom_vm_details(
+                virtual_machine=vm, resource_group_name=vm_resource_group_name
+            )
+
+        return vm_details_actions._prepare_vm_details(
+                virtual_machine=vm,
+                resource_group_name=vm_resource_group_name,
+                prepare_vm_instance_data_function=vm_details_actions._prepare_common_vm_instance_data
+            )
+
+
+class StaticVmDetailsActions(VMDetailsActions):
+    def _prepare_vm_network_data(self, virtual_machine, resource_group_name):
+        """Prepare VM Network data.
+
+        :param virtual_machine:
+        :param str resource_group_name:
+        :return:
+        """
+        vm_network_interfaces = []
+        for network_interface in virtual_machine.network_profile.network_interfaces:
+            interface_name = get_name_from_resource_id(network_interface.id)
+            interface = self.get_vm_network(
+                interface_name=interface_name, resource_group_name=resource_group_name
+            )
+
+            ip_configuration = interface.ip_configurations[0]
+            private_ip_addr = ip_configuration.private_ip_address
+
+            network_data = [
+                VmDetailsProperty(key="IP", value=ip_configuration.private_ip_address),
+                VmDetailsProperty(key="MAC Address", value=interface.mac_address),
+            ]
+
+            subnet_name = ip_configuration.subnet.id.split("/")[-1]
+
+            if ip_configuration.public_ip_address:
+                public_ip = self._azure_client.get_public_ip(
+                    public_ip_name=ip_configuration.public_ip_address.name,
+                    resource_group_name=resource_group_name,
+                )
+                network_data.extend(
+                    [
+                        VmDetailsProperty(key="Public IP", value=public_ip.ip_address),
+                        VmDetailsProperty(
+                            key="Public IP Type",
+                            value=public_ip.public_ip_allocation_method,
+                        ),
+                    ]
+                )
+
+                public_ip_addr = public_ip.ip_address
+            else:
+                public_ip_addr = ""
+
+            vm_network_interface = VmDetailsNetworkInterface(
+                interfaceId=interface.resource_guid,
+                networkId=subnet_name,
+                isPrimary=interface.primary,
+                networkData=network_data,
+                privateIpAddress=private_ip_addr,
+                publicIpAddress=public_ip_addr,
+            )
+
+            vm_network_interfaces.append(vm_network_interface)
+
+        return vm_network_interfaces
