@@ -951,7 +951,7 @@ class AzureDriver(ResourceDriverInterface):
                 )
             )
             attr_mapping = {
-                "IP": "Private IP",
+                "IP": "IP Address",
                 "Public IP": "Public IP",
                 "MAC Address": "MAC Address",
             }
